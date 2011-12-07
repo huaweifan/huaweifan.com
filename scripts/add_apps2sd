@@ -1,0 +1,225 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+
+scripts/check_galaxy_sx
+
+if [ "$?" == "1" ]
+then
+  clear
+  echo
+  echo "ROM定制工具的这种功能不支持这个ROM"
+  exit 0
+fi
+
+if [ "$1" == "" ]
+then
+  clear
+
+elif [ "$1" == "show_help" ]
+then
+
+  clear
+  echo
+  echo "-----------------------------------------------------------------"
+  echo  
+  echo "Apps2SD 功能 将允许所有的应用程序安装到SD卡上，以节省您设备的存储空间。"
+  echo
+  echo "注意: 此功能一般只适用于内部存储空间较小的设备"
+  echo "如果您的设备具有大容量内存，那么没有必要添加 Apps2SD 功能。"
+  echo "比如Nexus S，添加 Apps2SD 功能会影响软件运行速度"
+  echo
+  echo "这个ROM定制工具使用的是Darktremor Apps2SD的方法。"
+  echo "确保你有一个快速的存储卡（例如Class 6）。"
+  echo "并对分区使用合适文件系统（例如EXT3），Swap交换分区通常是没有必要的。"
+  echo ""
+  echo
+  echo "-----------------------------------------------------------------"
+  echo
+
+fi
+
+device_name=`scripts/get_device_name`
+change_mnt=`scripts/get_edify_def_val $device_name change_mnt`
+change_mnt_dell=`scripts/get_edify_def_val $device_name change_mnt_dell`
+
+if [ -e tools/edify_defs/$device_name ]
+then
+  if [ "$change_mnt" != "UNKNOWN" ] || [ "$change_mnt_dell" != "UNKNOWN" ]
+  then
+    echo "警告：此设备 ($device_name) 最有可能不会支持Apps2SD！"
+    echo
+  fi
+fi
+
+
+echo -n "继续安装 Apps2SD 功能(y/n)? (默认: y): "
+read do_apps2sd
+
+if [ "$do_apps2sd" == "n" ]
+then
+  exit 0
+fi
+
+echo
+
+if [ -d WORKING_* ]
+then
+
+  cd WORKING_*
+
+  if [ ! -e META-INF/com/google/android/update-script ]
+  then
+    echo "错误：刷机脚本未找到！"
+    cd ..
+    exit 0
+  fi
+
+  su_path=`find . -name su`
+
+  if [ "$su_path" == "" ]
+  then
+    echo "'su'二进制文件在定制ROM文件夹中没有找到！"
+    echo "您必须先对您的 ROM 添加 Root 权限！"
+    cd ..
+    exit 0
+  else
+
+    echo
+    echo "已找到 $su_path"
+
+    cd .. 
+    scripts/a2sd_exists
+
+    if [ "$?" == "1" ]
+    then
+      echo
+      echo "a2sd 已经安装了！"
+      scripts/add_cachesd_to_update_script
+      exit 0
+    fi
+
+  fi
+
+else
+  echo
+  echo 未能发现工作文件夹，你必须创建一个！
+  exit 0
+fi
+
+
+scripts/ensure_boot_extracted
+
+if [ -d BOOT-EXTRACTED ]
+then
+  if [ -d WORKING_* ]
+  then
+    echo
+  else
+    exit 0
+  fi
+else
+  exit 0
+fi
+
+if [ -d BOOT-EXTRACTED/boot.img-ramdisk ]
+then
+  cd BOOT-EXTRACTED/boot.img-ramdisk
+else
+  echo "错误：BOOT-EXTRACTED/boot.img-ramdisk文件夹不存在！"
+  exit 0
+fi
+
+test_property=`grep -c "on property:cm.filesystem.ready=1" init.rc`
+test_start_a2sd=`grep -c "start a2sd" init.rc`
+test_sysinit=`grep -c "start sysinit" init.rc`
+test_cm_sysinit=`grep -c "exec /system/bin/sysinit" init.rc`
+
+if [[ "$test_property" != "0" && "$test_start_a2sd" != "0" ]] || \
+   [[ "$test_property" != "0" && "$test_sysinit" != "0" ]] || \
+   [[ "$test_property" != "0" && "$test_cm_sysinit" != "0" ]] 
+then
+  echo "init.rc 中已经存在开启 a2sd 的内容！"
+  cd ../..
+  echo 
+  echo "正在删除 BOOT-EXTRACTED 文件夹 ..."
+  rm -rf BOOT-EXTRACTED
+
+else
+
+  echo
+  echo 正在修改 ramdisk 中的 init.rc 文件以开启 Apps2SD 功能 ...
+
+
+  if [ "$test_sysinit" != "0" ] 
+  then
+    sed -i -e 's/start sysinit/start sysinit\n    on property:cm.filesystem.ready=1/' init.rc 
+
+  elif [ "$test_start_a2sd" != "0" ] && [ "$test_property" == "0" ]
+  then
+    sed -i -e 's/start a2sd/start a2sd\n    on property:cm.filesystem.ready=1/' init.rc 
+
+  elif [ "$test_start_a2sd" == "0" ] && [ "$test_property" == "0" ]
+  then
+    sed -i -e 's/class_start default/start a2sd\n    on property:cm.filesystem.ready=1\n\n    class_start default/' init.rc
+ 
+  elif [ "$test_start_a2sd" == "0" ] && [ "$test_property" != "0" ]
+  then
+    sed -i -e 's/on property:cm.filesystem.ready=1/start a2sd\n    on property:cm.filesystem.ready=1/' init.rc 
+  fi
+
+  test_service_a2sd=`grep -c "service a2sd" init.rc`
+  test_service_sysinit=`grep -c "service sysinit" init.rc`
+
+  if [ "$test_service_a2sd" == "0" ] && [ "$test_service_sysinit" == "0" ]
+  then
+    sed -i -e 's/service media /service a2sd \/system\/bin\/logwrapper \/system\/bin\/sh \/system\/bin\/a2sd\n    disabled\n    oneshot\n\nservice media /' init.rc
+  fi
+
+  cd ../..
+  scripts/build_boot_img
+
+fi
+
+scripts/add_apps2sd_files
+scripts/add_apps2sd_to_update_script
+res=$?
+
+if [ "$res" == "0" ]
+then
+
+  #
+  # apps2sd may have included Bash binary
+  #
+  find_cmd=`find tools/apps2sd_files -name bash`
+  if [ "$find_cmd" != "" ]
+  then
+    scripts/add_bash_to_update_script
+  fi
+
+  #
+  # Prompt for busybox run-parts method
+  #
+  if [ "$test_sysinit" == "0" ] 
+  then
+    scripts/add_busybox_run_parts for_apps2sd
+  fi
+
+  #
+  # Dalvik-cache to SD
+  #
+  scripts/add_cachesd_to_update_script
+
+  echo
+  echo "已添加完成！"
+
+fi

@@ -1,0 +1,71 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+#
+# This script has one optional parameter:
+#
+# $1 = folder name
+#
+
+base_dir=`pwd`
+
+if [ "$1" == "" ]
+then
+  cd WORKING_*
+else
+  cd $1
+fi
+
+#
+# Check for strange boot.img header
+#
+
+check_header=`od -A n -h -j 0 -N 8 boot.img | sed 's/ //g'`
+
+if [ "$check_header" != "4e415244494f2144" ]
+then
+
+  echo
+  echo "没有发现 Android header 在 boot.img 的开始位置"
+
+  # Mac OS X adds extra spaces between the numbers!
+  hex_offset=`od -x -A x boot.img | grep -m 1 "4e41 [ ]*5244 [ ]*494f [ ]*2144" | sed -e 's/ .*//'`
+
+  if [ "$hex_offset" != "" ]
+  then
+
+    #
+    # Remove leading bytes before the Android header 
+    #
+
+    dec_offset=`printf "%d" 0x$hex_offset`
+    echo "Android header 被发现偏移在 $dec_offset"
+    echo "在 boot.img 能够正确读取之前正在删除额外的东西 ..."
+
+    dd if=boot.img of=newboot.img bs=1 skip=$dec_offset
+    rm -f boot.img
+    mv newboot.img boot.img
+    echo
+    cd $base_dir
+    exit 0
+
+  else
+    echo "警告: Android header 没有处于 boot.img 中的任何位置！"
+    cd $base_dir
+    exit 1
+  fi
+fi
+
+
+cd $base_dir
+exit 0
+

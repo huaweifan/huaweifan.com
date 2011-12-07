@@ -1,0 +1,46 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+
+img_dir=$1
+img_file=$2
+
+dos_path=`cygpath -wp $img_dir`
+
+echo 
+echo "#####################################################################"
+echo 
+echo " 从 $img_file 解压文件前阅读以下说明："
+echo 
+echo " 1) 如果出现“Cannot Read Disk”警告对话框，请忽略（按“OK”）！"
+echo 
+echo " 2) 当 Ext2Explore 出现时，使用 'File->Open Image' 打开："
+echo "    $dos_path\\$img_file"
+echo
+echo " 3) 它加载后，右键单击在左框架中显示的新图标，并选择保存。"
+echo
+echo " 4) 选择 $dos_path"
+echo
+echo " 5) 等待解压完成，然后关闭 Ext2Explore "
+echo
+echo "#####################################################################"
+echo
+
+tools/ext2read_windows/ext2explore.exe &
+
+echo 
+echo " - > 执行完上述步骤，然后按回车！ < - "
+echo
+
+scripts/press_enter
+
+

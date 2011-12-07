@@ -1,0 +1,139 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+
+clear
+
+curr_dir=`pwd`
+
+echo
+echo "这个脚本将会解压任何文件夹的“data.img”文件（通常在Nandroid备份）。"
+echo
+echo "此内容将被解压缩到 $curr_dir 下的一个新文件夹"
+echo 
+echo "----------------------------------------------------------------------"
+echo 
+echo -n "是否继续 (y/n)? (默认: y): "
+
+read proceed
+echo
+
+if [ "$proceed" == "n" ]
+then
+  echo "取消"
+  exit 0
+fi
+
+
+date_str=`date '+%m%d%y_%H%M%S'`
+img_dir="data`echo -n $f`_$date_str"
+img_path=$curr_dir/$img_dir
+
+echo
+echo "正在创建文件夹 $img_path ..."
+mkdir $img_dir
+
+echo
+echo "- > 将 data.img 放入上述提到的文件夹 < -"
+
+scripts/press_enter
+
+if [ ! -e $img_dir/data.img ]
+then
+  echo "错误：data.img 没有找到！"
+  echo
+  echo "正在删除 $img_dir 文件夹"
+  rm -rf $img_dir
+  exit 1
+fi      
+  
+
+#
+# Check for YAFFS/EXT*
+#
+
+scripts/check_if_img_yaffs $img_dir data.img
+
+is_yaffs=$?
+
+if [ "$is_yaffs" == "1" ]
+then
+
+  if [ `uname | grep CYGWIN` ]
+  then
+    unyaffs_file=unyaffs.exe
+  else
+    unyaffs_file=unyaffs
+  fi
+    
+  scripts/compile_unyaffs $img_dir data.img
+  if [ "$?" == "1" ]
+  then
+    exit 0
+  fi
+
+  echo
+  echo 正在解压 data.img 里的内容 ...
+  cd $img_dir
+  result=`../tools/unyaffs_files/$unyaffs_file data.img 2>/dev/null`
+  cd ..
+
+else
+
+  echo
+  echo "检测到非yaffs文件格式"
+  echo
+
+  cd $img_dir
+
+  # Get full path
+  imgr_dir=`pwd`
+
+  cd ..
+  scripts/extract_ext3_img $img_path data.img
+fi
+
+
+cd $img_dir
+check_dump=`ls unyaffs*stackdump* 2>/dev/null`
+rm -f data.img 2>/dev/null
+
+if [ "$?" == "1" ]
+then
+  echo
+  echo "警告：data.img正在使用中。应用程序关闭后，请手动删除文件。"
+  echo
+fi
+
+cd ..
+
+if [ "$check_dump" != "" ]
+then
+  echo
+  echo "错误：由于不兼容 unyaffs，stackdump 文件发现在 $img_dir 下。"
+  exit 1
+fi
+
+if [ "`ls $img_dir`" == "" ]
+then
+  echo 
+  echo "错误：$img_path 是空的！"
+  echo
+  exit 1
+fi
+
+echo
+echo "正在列表 $img_path："
+echo
+ls -l $img_dir
+
+

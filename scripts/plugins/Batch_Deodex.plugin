@@ -1,0 +1,65 @@
+
+echo
+echo "De-odex 批处理工具"
+echo "---------------"
+echo
+echo "此脚本将会抓取 original_update 文件夹下所有 ROM 进行 De-odex 操作，"
+echo "并且移动它们的ROM定制文件夹到一个新文件夹。"
+echo
+
+echo -n "是否继续 (y/n)? (默认: y): "
+read do_batch
+echo
+
+if [ "$do_batch" == "n" ]
+then
+  exit 0
+fi
+
+echo " - > 请把 ROM 放到 original_update 文件夹 < - "
+
+scripts/press_enter
+grep_files=`scripts/grep_roms`
+
+if [ "$grep_files" != "" ]
+then
+
+  scripts/make_backup_working 
+
+  date_str=`date '+%m%d%y_%H%M%S'`
+  done_dir="batch_$date_str"
+
+  echo
+  echo "正在创建文件夹 folder $done_dir"
+  echo
+  mkdir $done_dir
+
+  for filename in $grep_files
+  do
+
+    filename=`echo $filename | sed -e 's/\.\///g'`
+  
+    echo
+    echo "================================================================================="
+    echo 
+    scripts/choose_rom name_given $filename
+    scripts/do_deodex_folder "framework app" y
+ 
+    echo
+    echo "正在移动ROM定制文件夹 folder ..."
+    mv -v WORKING_* $done_dir/WORKING_$filename
+    echo
+
+  done
+
+  echo
+  echo "================================================================================="
+  echo 
+  echo "完成！"
+  echo
+  echo "已完成的文件夹是在 $done_dir"
+  echo
+
+else
+  echo "错误：没有找到 ROM ！"
+fi      

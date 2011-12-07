@@ -1,0 +1,65 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+
+clear
+
+echo
+echo "----------------------------------------------------------------"
+echo  
+echo "此选项允许您使用一个自定义开机动画，在默认的位置。"
+echo 
+echo "启用此选项后，请将你的开机动画bootanimation.zip复制到/data/local文件夹。"
+echo
+echo "----------------------------------------------------------------"
+echo
+
+echo -n "是否要继续 (y/n)? (默认: y): "
+read do_install
+
+if [ "$do_install" == "n" ]
+then
+  exit 0
+fi
+
+echo 
+
+if [ -d WORKING_* ]
+then
+  echo
+  echo 已发现ROM定制文件夹
+  cd WORKING_*
+else
+  echo
+  echo 没有找到ROM定制文件夹，您将需要创建一个！
+  exit 0
+fi
+
+echo
+
+if [ -d data/local ]
+then
+  echo /data/local 已经存在
+else
+  echo 正在创建 /data/local
+  mkdir -p data/local
+fi
+
+if [ ! -e data/local/placeholder ]
+then
+  touch data/local/placeholder
+fi
+
+cd ..
+scripts/add_data_local_to_update_script
+echo
+

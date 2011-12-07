@@ -1,0 +1,132 @@
+
+echo
+echo "解包三星Galaxy S2 CSC 客户定制软件"
+echo "-------------------------------"
+echo
+echo "此脚本将会从三星 Galaxy S 2 的官方固件中的 cache.img 文件解压"
+echo "CSC（客户定制软件）。CSC 来自 'sec_csc.zip' 文件，这个文件包含"
+echo "位置、默认设置和软件。"
+echo
+
+echo -n "是否继续 (y/n)? (默认: y): "
+read do_csc
+echo
+
+if [ "$do_csc" == "n" ]
+then
+  exit 0
+fi
+
+date_str=`date '+%m%d%y_%H%M%S'`
+csc_dir=csc_$date_str
+
+echo
+echo "正在创建文件夹 `pwd`/$csc_dir ..."
+mkdir $csc_dir
+
+echo
+echo " - > 请放置 cache.rfs 到上述文件夹中 < - "
+
+scripts/press_enter
+
+cd $csc_dir
+
+if [ -e cache.img ]
+then
+
+  #
+  # Compile sigm2img
+  #
+
+  simg2img_file=simg2img
+  if [ `uname | grep CYGWIN` ]
+  then
+    simg2img_file=$simg2img_file.exe
+  fi
+
+  if [ -e ../tools/samsung_files/simg2img_files/$simg2img_file ]
+  then
+    echo "已经找到 $simg2img_file"
+    cd ..
+  else
+    echo "正在编译 simg2img ..."
+
+    cd ../tools/samsung_files/simg2img_files
+    gcc -c sparse_crc32.c
+    gcc sparse_crc32.o simg2img.c -w -o simg2img
+    rm *.o 
+    cd ../../..
+
+    if [ -e tools/samsung_files/simg2img_files/$simg2img_file ]
+    then
+      echo "$simg2img_file 已经编译成功"
+    else
+      echo "错误：$simg2img_file 没有编译成功！"
+      rm -rfv $csc_dir
+      exit 1
+    fi    
+  fi
+
+  echo
+
+
+  #
+  # Convert to ext4
+  #
+
+  echo "正在解包 cache.img 为 ext4 格式 ..."
+  tools/samsung_files/simg2img_files/simg2img $csc_dir/cache.img \
+    $csc_dir/ext4_cache.img
+    
+  if [ ! -e $csc_dir/ext4_cache.img ]
+  then
+    echo "无法解包 cache.img!"
+    exit 1
+  fi
+
+  rm -f $csc_dir/cache.img
+
+  #
+  # Extract files from ext4_cache.img
+  #
+
+  if [ `uname | grep CYGWIN` ]
+  then
+    echo
+    echo "文件现在是 ext4 格式。现在我们需要解包 the sec_csc.zip 文件。"
+    scripts/press_enter
+    scripts/show_linux_reader $csc_dir ext4_cache.img
+  else
+    scripts/extract_ext3_img $csc_dir ext4_cache.img
+  fi
+
+  rm -f $csc_dir/ext4_cache.img 2>/dev/null
+  if [ "$?" == "1" ]
+  then
+    echo
+    echo "警告：ext4_cache.img正在使用中。应用程序关闭后，请手动删除文件。"
+    echo
+  fi
+
+  if [ ! -e $csc_dir/sec_csc.zip ]
+  then
+    echo "警告：sec_csc.zip 没有找到！"
+    exit 1
+  else
+    echo
+    echo "已经完成！您的文件在 $csc_dir/sec_csc.zip。"
+    echo
+    echo "您可以解压缩这个文件，并复制“system”里的内容到"
+    echo "您的ROM的系统文件夹的“system”文件夹中。"
+    echo
+    exit 0
+  fi
+
+else
+  echo "错误：没有找到cache.img！"
+  echo
+  cd ..
+  echo "正在删除 $csc_dir 文件夹 ..."
+  rm -rf csc_dir
+  exit 1
+fi

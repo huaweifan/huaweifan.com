@@ -1,0 +1,74 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+
+cd WORKING_*
+echo
+
+if [ -e META-INF/com/google/android/update-script ]
+then
+  
+  #
+  # Deleting any existing lines with 'bin/bash' to prevent conflicts
+  #
+  echo "正在删除 update-script 脚本中关于 bin/bash 的语句 ..."
+  sed -i -e '/bin\/bash[ ]*$/d' META-INF/com/google/android/update-script
+  sed -i -e '/symlink.*\/bash .*/d' META-INF/com/google/android/update-script
+
+  #
+  # Do this to prevent conflicts with the update-script in ROMs that already have the binary
+  #
+  if [ -e system/xbin/bash ]
+  then
+    if [ "`find system/bin -name bash`" == "" ]
+    then
+      echo "正在复制 system/xbin/bash 到 system/bin/bash 位置 ..."
+      cp -f system/xbin/bash system/bin/bash
+    fi
+  fi
+
+  echo "正在为 update-script 脚本添加 bash 的关于内容 ..."
+
+  cd META-INF/com/google/android
+
+  sed -i -e 's/set_perm 0 2000 0550 SYSTEM:etc\/init.goldfish.sh/set_perm 0 2000 0550 SYSTEM:etc\/init.goldfish.sh\nset_perm 0 0 04755 SYSTEM:bin\/bash\nsymlink \/system\/bin\/bash SYSTEM:bin\/sh/g' update-script
+
+  grep_bash=`grep -c bin/bash update-script` 
+  cd ../../../..
+
+  if [ $grep_bash != 2 ]
+  then
+    echo "错误: 无法在 update-script 脚本添加 bash 的内容关于！"
+
+  else
+
+    #
+    # Ensure the update-script does not cause conflicts with 'sh' when it is symlinked
+    #
+    sh0_path=`find . -name sh0`
+    if [ "$sh0_path" == "" ] 
+    then
+      if [ -e system/bin/sh ]
+      then
+        echo "由于要为 bash 添加指向链接，正在清除 /system/bin/sh ..."
+        mv system/bin/sh system/bin/sh0
+      fi        
+    fi
+  fi
+
+else
+  echo "错误: 未发现 update-script 刷机脚本！"
+fi
+
+cd ..
+
+scripts/fix_update_script_blanks

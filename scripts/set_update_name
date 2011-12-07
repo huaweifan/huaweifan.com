@@ -1,0 +1,51 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+#
+# This script has one mandatory argument
+#
+# $1 = current name of update file (with extension) 
+#
+
+filename=$1
+
+echo 1>&2
+echo "新的ROM将被命名为 $filename" 1>&2
+echo -n "更改名称 (y/n)? (默认: n): " 1>&2
+
+read change_it
+echo 1>&2
+
+if [ "$change_it" == "y" ]
+then
+  echo -n "输入新的名称：" 1>&2
+  read newname 
+
+  echo 1>&2
+
+  filename=`echo $newname | sed -e 's/ /_/g'`
+  
+  if [ "$filename" == "" ]
+  then
+    filename=$1
+  fi
+  
+  has_zip=`echo $filename | grep -ic "\.zip"`
+  if [ $has_zip == 0 ]
+  then
+    filename="$filename.zip"
+  fi
+
+fi
+
+echo $filename
+

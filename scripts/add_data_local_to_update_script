@@ -1,0 +1,70 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+
+cd WORKING_*
+cd META-INF/com/google/android
+
+if [ ! -e update-script ]
+then
+  echo "错误：update-script 刷机脚本没有找到！"
+  cd ../../../../..
+  exit 0
+fi
+
+grep_data_local=`grep -c "0771 DATA:local" update-script`
+
+if [ "$grep_data_local" == "1" ]
+then
+  echo "update-script 刷机脚本已经有 /data/local 相关代码"
+
+else
+  echo "正在添加 /data/local 相关代码到 update-script 刷机脚本中..."
+
+  if [ `grep -c "format .*DATA:" update-script` == 0 ]
+  then
+    if [ `grep -c "format .*SYSTEM:" update-script` == 0 ]
+    then
+      sed -i -e '1i delete DATA:local\n' update-script
+    else
+      sed -i -e 's/format\(.*\)SYSTEM:[ ]*[\n]*/format\1SYSTEM:\ndelete DATA:local\n/' update-script
+    fi      
+  else 
+    #
+    # The 'delete DATA:local' command is redundant because you're formatting the DATA partition,
+    # but we'll do that in case the user decides later to remove the format command. 
+    #
+    sed -i -e 's/format\(.*\)DATA:[ ]*[\n]*/format\1DATA:\ndelete DATA:local\n/' update-script
+  fi
+
+  if [ `grep -c "copy_dir PACKAGE:data DATA:" update-script` == 0 ]
+  then
+    sed -i -e 's/delete DATA:local[ ]*[\n]*/delete DATA:local\ncopy_dir PACKAGE:data DATA:\n/' update-script
+  fi 
+
+  sed -i -e 's/copy_dir PACKAGE:data DATA:[ ]*[\n]*/copy_dir PACKAGE:data DATA:\nset_perm 2000 2000 0771 DATA:local\n/' update-script
+
+  grep_data_local=`grep -c "0771 DATA:local" update-script`
+
+  if [ $grep_data_local == 0 ]
+  then
+    echo "错误: 无法在 update-script 脚本中添加 /data/local 相关代码！"
+  else
+    echo
+    echo "您可以把自定义开机动画 bootanimation.zip 放置到 /data/local文件夹。"
+    echo "如果 ROM 中没有自定义动画文件 bootanimation.zip 将使用默认开机动画。"
+  fi
+fi
+
+cd ../../../../..
+
+scripts/fix_update_script_blanks

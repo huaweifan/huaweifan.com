@@ -1,0 +1,114 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+clear
+
+
+if [ ! -d WORKING_* ]
+then
+  echo "没有找到ROM定制文件夹！"
+  exit 0
+fi
+
+cd WORKING_*
+
+if [ ! -e boot.img ]
+then
+  echo "boot.img 没有找到！"
+  exit 0
+fi
+
+
+cd ..
+current_cmd=`scripts/get_cmdline`
+
+if [ "$current_cmd" == "" ]
+then
+  current_cmd2="(None)"
+else
+  current_cmd2=$current_cmd
+fi
+
+echo
+echo "在 boot.img 中当前命令代码值:"
+echo
+echo "$current_cmd2"
+echo
+echo
+echo "注意: 您通常不会更改 ROM 中的命令代码值，此功能是准备给希望尝试"
+echo "      不同值的高级用户。"
+echo
+echo -n "您希望更改它吗 (y/n)? (默认: y): "
+
+read do_change
+echo
+
+if [ "$do_change" == "n" ]
+then
+  echo "好的，命令代码不会被更改"
+
+else 
+
+  echo -n "请输入新的命令代码（或按回车键清除）: "
+  read new_cmd
+  echo
+
+  if [ "$new_cmd" == "" ]
+  then
+   echo "警告: 命令代码中加入了空字符串"
+
+  elif [ ${#new_cmd} -lt 3 ]
+  then
+    echo "错误: 字符串必须长于2个字符"
+    echo
+    exit 0
+  fi
+
+  if [ "$new_cmd" == "$current_cmd" ]
+  then
+    echo "您的命令代码值与原始值相同"
+    echo
+    exit 0
+  fi
+
+
+  base_addr=`scripts/get_kernel_base_addr`
+  page_size=`scripts/get_boot_img_page_size`
+
+  scripts/ensure_boot_extracted
+  scripts/build_boot_img $page_size $base_addr "$new_cmd"
+
+  current_cmd=`scripts/get_cmdline`
+  if [ "$current_cmd" == "" ]
+  then
+    current_cmd2="(None)"
+  else
+    current_cmd2=$current_cmd
+  fi
+
+  echo
+  echo "------------------------------------------------------------"
+  echo
+  echo "在 boot.img 中命令代码现在设置为："
+  echo
+  echo "$current_cmd2"
+
+  if [ "$current_cmd" != "$new_cmd" ]
+  then
+    echo
+    echo "警告: 命令代码与指定的不相符！"
+  fi
+
+fi
+
+echo
+

@@ -1,0 +1,345 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+
+scripts/extract_kernel_and_modules
+
+if [ -d MY_DEVICE_WORKING ]
+then
+  my_device=`scripts/get_build_prop_val ro.product.device MY_DEVICE_WORKING`
+  my_board=`scripts/get_build_prop_val ro.product.board MY_DEVICE_WORKING`
+  my_platform=`scripts/get_build_prop_val ro.board.platform MY_DEVICE_WORKING`
+
+  #
+  # Note: Don't delete MY_DEVICE_WORKING yet, it will be required later in this script
+  #
+fi
+
+if [ -d MY_KERNEL ] 
+then
+  echo
+  scripts/press_enter
+else
+  exit 1
+fi
+
+
+#
+# Now grab the donor ROM
+#
+
+clear
+echo
+echo "***************************************************************"
+echo 
+echo " - > 获取一个您想要移植到其它设备的 ROM 文件 < - "
+echo
+echo "***************************************************************"
+
+scripts/check_rom no_info
+
+if [ -d WORKING_* ]
+then
+
+  scripts/press_enter
+
+  cd WORKING_*
+
+  if [ -d system ]
+  then
+
+    #
+    # Samsung Galaxy S2 or equivalent
+    #
+    if [ -e zImage ]
+    then
+      rm -f boot.img
+
+      cp ../tools/samsung_files/unpack-initramfs .
+      ./unpack-initramfs zImage
+   
+      if [ ! -d initramfs_root ]
+      then
+        echo "错误：无法解开initramfs_root的文件夹！"
+      else
+        mkdir ../BOOT-EXTRACTED
+        echo
+        mv -vf initramfs_root ../BOOT-EXTRACTED/boot.img-ramdisk
+      fi
+
+      rm -f kernel
+      rm -f zImage
+      rm -f unpack-initramfs
+
+      cd ..
+
+    elif [ -e boot.img ]
+    then
+      cd ..
+      scripts/ensure_boot_extracted
+    fi
+
+  else
+    cd ..
+    echo
+    echo "正在退出和清理文件夹..."
+
+    rm -rf MY_KERNEL
+    rm -rf MY_DEVICE_WORKING
+    exit 0
+  fi
+
+else
+  echo "你没有选择一个ROM"
+  echo "正在退出和清理文件夹..."
+  rm -rf MY_KERNEL
+  rm -rf MY_DEVICE_WORKING
+  exit 0
+fi
+
+if [ ! -d BOOT-EXTRACTED ]
+then
+  echo "错误：BOOT-EXTRACTED 文件夹没有找到 ！"
+  exit 0
+fi
+
+
+
+clear
+echo
+echo "***************************************************************"
+echo 
+echo " - > 移植您的ROM < -"
+echo
+echo "***************************************************************"
+
+#
+# Replace kernel, modify ramdisk and then build new boot.img
+#
+
+echo
+echo "正在复制 MY_KERNEL/zImage 到 BOOT-EXTRACTED 文件夹"
+cp -f MY_KERNEL/zImage BOOT-EXTRACTED/
+
+
+echo
+echo "正在复制 MY_KERNEL/ boot.img到新的ROM定制文件夹，"
+echo "建设新的boot.img文件之前确定正确的基址。"
+
+cd WORKING_*
+cp -f ../MY_KERNEL/boot.img .
+cd ..
+echo
+
+
+#
+# Rename *.rc files if required
+#
+
+board=`scripts/get_product_board`
+
+cd BOOT-EXTRACTED/boot.img-ramdisk
+file_list=`ls *.$board.rc 2>/dev/null`
+
+if [ "$file_list" == "" ]
+then
+ board=`ls init.*.rc | sed -e 's/init.goldfish.rc//g' -e 's/init.\([^.]*\).rc/\1/g' -e '/^$/d'`
+ file_list=`ls *.$board.rc 2>/dev/null`
+fi
+
+if [ "$file_list" != "" ]
+then
+  for rc_file in ${file_list[@]}
+  do
+    new_name=`echo $rc_file | sed -e 's/'"$board"'/'"$my_board"'/g'`
+
+    if [ "$rc_file" != "$new_name" ]
+    then
+      echo "正在重命名 ..."
+      mv -v $rc_file $new_name
+      echo
+    fi      
+  done
+fi
+
+
+#
+# Check if init.rc refers to busybox, and if the busybox binary is
+# found in the working folder
+# 
+if [ "`grep -o -m 1 busybox init.rc`" == "busybox" ]
+then
+  cd ../../WORKING_*
+  find_busybox=`find . -name busybox`
+  cd ..
+
+  if [ "$find_busybox" == "" ]
+  then
+    echo
+    echo "----------------------------------------------------------------------"
+    echo 
+    echo "警告：ramdisk的init.rc引用了busybox，但是在ROM定制文件夹中没有找到它。"
+    echo "     如果你建立这个ROM的方式是正确的，它可能无法得到过去在您的设备的开机画面。"
+    echo 
+    echo "     我发现这个："
+    echo 
+    grep busybox BOOT-EXTRACTED/boot.img-ramdisk/init.rc
+    echo 
+    echo "一些提示："
+    echo 
+    echo "- 您可能需要复制busybox到上面提到的文件夹。你可以找到“tools”文件夹下的二进制文件。"
+    echo ""
+    echo "- 确保您的 update-script 刷机脚本文件也有以下行或类似："
+    echo "  set_perm 0 0 04755 SYSTEM:xbin/busybox"
+    echo "- 您可能仍然会丢失一些符号连接 /system/xbin"
+    echo ""
+    echo -n "你想要在脚本中修正这些吗 (y/n)? (默认: y): "
+    
+    read proceed_fix
+    if [ "$proceed_fix" != "n" ]
+    then
+      scripts/add_busybox
+    else
+      echo "取得未修复" 
+    fi
+
+    echo
+    echo "当您准备建立boot.img文件，按回车键继续......"
+    read enterKey
+  fi
+
+else
+  cd ../..
+fi
+
+scripts/build_boot_img
+
+
+#
+# Set values in build.prop
+#
+
+if [ "$my_device" == "UNKNOWN" ]
+then
+  echo "警告：不会修改 ro.product.device 在 build.prop 文件中(device=UNKNOWN)"
+else
+  scripts/set_build_prop_val ro.product.device $my_device
+fi
+
+if [ "$my_board" == "UNKNOWN" ]
+then
+  echo "警告：不会修改 ro.product.board 在 build.prop 文件中(board=UNKNOWN)"
+else
+  scripts/set_build_prop_val ro.product.board $my_board
+fi
+
+if [ "$my_platform" == "UNKNOWN" ]
+then
+  echo "警告：不会修改 ro.board.platform 在 build.prop 文件中(platform=UNKNOWN)"
+else
+  scripts/set_build_prop_val ro.board.platform $my_platform
+fi  
+
+
+
+#
+# Copy module files to donor ROM
+#
+
+if [ -d MY_KERNEL/system ]
+then
+  cd WORKING_*
+  echo 
+  echo "正在复制 modules/drivers ..."
+  cp -rf ../MY_KERNEL/system/* system/
+  cd ..
+fi
+
+
+#
+# Copy the zImage by itself if it's a Galaxy S2 or equivalent
+#
+
+if [ -e tools/samsung_files/sgs_variants/$my_device ] || \
+    [ -e tools/samsung_files/sgs2_variants/$my_device ]
+then
+  echo 
+  echo "正在复制 zImage ..."
+  cp -vf MY_KERNEL/zImage WORKING_*/
+else
+  cd WORKING_*
+  rm -f modem.bin flash_image redbend_ua
+  cd ..
+fi
+
+
+#
+# We should not check or use the mount points in the original updater-script
+# when we convert the update-script back to updater-script, because they were 
+# only meant for the other device!!
+#
+
+cd WORKING_*
+
+if [ -d META-INF/com/google/android ]
+then
+
+  cd META-INF/com/google/android
+
+  if [ -e updater-script.orig ]
+  then
+    rm -f updater-script.orig
+  fi
+
+  if [ -e update-binary.orig ]
+  then
+    rm -f update-binary.orig
+  fi
+
+  #
+  # Use your device's original updater-script to assist with checking mount points later on
+  #
+  if [ -e ../../../../../MY_DEVICE_WORKING/META-INF/com/google/android/updater-script ]
+  then
+    cp ../../../../../MY_DEVICE_WORKING/META-INF/com/google/android/updater-script updater-script.orig
+  fi
+
+  cd ../../../..
+
+fi
+
+cd ..
+
+
+rm -rf MY_KERNEL
+rm -rf MY_DEVICE_WORKING
+
+
+
+echo
+echo "=============================================================="
+echo
+echo "如果一切顺利，您现在应该拥有为您的ROM定制工具移植的ROM。"
+echo "进行必要的调整，然后准备生成你的ROM。"
+echo
+echo "重要"
+echo "---------"
+echo "如果新的ROM大小比为您的设备容量大，您可能需要删除一些应用程序，"
+echo "制定好的ROM要可以放入您的设备的内部存储。否则，您的设备可能无法启动。"
+echo
+echo "如果您的设备刷入ROM定制工具制作的ROM不能启动，"
+echo "请参考ROM定制工具的技术支持论坛（bbs.huaweifan.com ）"
+echo "学习怎样使用 Recovery 日志文件 'logcat' 调试解决问题。"
+echo 
+echo "=============================================================="
+echo 
+

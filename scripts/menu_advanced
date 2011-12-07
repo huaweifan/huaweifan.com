@@ -1,0 +1,78 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+#!/bin/bash
+ 
+version=$1
+
+while :
+do
+
+  clear
+
+  echo 
+  echo "============================================================"
+  echo " 技术支持及更新来自华为手机论坛 （http://bbs.huaweifan.com）"
+  echo "============================================================"
+  echo
+  echo " 11 - 对您的 ROM 进行 Deodex 优化（将apk和odex两个文件合并）"
+  echo " 12 - 添加 内置内存分配优化为提升速度(仅限官方ROM)"
+  echo " 13 - 添加 /data/app 功能支持（可集成可删除内置程序）"
+  echo " 14 - 添加 Nano 文本编辑器 + sysro/sysrw(调整system分区读写权限脚本)"
+  echo " 15 - 添加 Bash (shell命令的解释器)"
+  echo " 16 - 添加 Apps2SD 功能"
+  echo " 17 - 添加 /etc/init.d 刷机脚本支持（busybox run-parts）"
+  echo " 18 - 添加 自定义开机动画功能"
+  echo " 19 - 移植工具（仅限测试功能）"
+  echo " 20 - boot image 工具(解压/打包/etc脚本)" 
+  echo " 21 - 解包 data.img"
+  echo " 22 - 签名 APK安装文件 和 ZIP刷机包 （支持批量操作）" 
+  echo " 23 - 转换 update-script 和 updater-script（可互相转换）"
+  echo " 24 - 杂项选项/插件脚本"
+  echo
+  echo " 99 - 打包 定制文件夹 完成ROM的定制"
+  echo "  0 - 返回主菜单"
+  echo
+  echo -n "输入选项："
+  read opt
+
+  if [ "$opt" != "0" ]
+  then
+    scripts/check_multiple_working
+  fi
+
+  if [ "$?" != "1" ]
+  then
+    case $opt in
+      11) scripts/do_deodex; continue;; 
+      12) scripts/task_killer;;
+      13) scripts/add_data_app show_help;;
+      14) scripts/add_nano show_help;;
+      15) scripts/add_bash show_help;;
+      16) scripts/add_apps2sd show_help;;
+      17) scripts/add_busybox_run_parts show_help;;
+      18) scripts/add_custom_boot_anim;;
+      19) scripts/porting_tools; continue;;
+      20) scripts/boot_img_tools; continue;;   
+      21) scripts/unpack_data_img;; 
+      22) scripts/sign_files; continue;;
+      23) scripts/update_script_convert_menu; continue;;
+      24) scripts/run_plugins; continue;;
+      99) scripts/build_rom;;
+      0) exit 1;;
+      *) echo "无效的选项"; continue;;
+    esac
+  fi
+
+  scripts/press_enter
+
+done

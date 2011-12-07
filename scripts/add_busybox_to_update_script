@@ -1,0 +1,74 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+
+cd WORKING_*
+cd META-INF/com/google/android
+
+echo
+
+if [ -e update-script ]
+then
+
+  if [ "`grep -c \"symlink busybox\" update-script`" != "0" ]
+  then
+    echo "update-script 已经有 BusyBox 内容"
+
+  else
+
+    if [ "`grep -m 1 \"busybox ln\" ../../../../*`" != "" ] || [ "`grep -m 1 \"busybox --install\" ../../../../*`" != "" ] 
+    then
+      echo "检测到一个包含 BusyBox 的代码链接脚本"
+      echo "不需修改刷机脚本 update-script"
+    
+    else
+
+      echo "正在添加 installbusybox 到ROM定制文件夹中"
+      cp ../../../../../tools/busybox_files/installbusybox ../../../../
+
+      echo "正在添加 installbusybox 到刷机脚本 update-script 中"
+
+      if [ `grep -c "set_perm_recursive.*SYSTEM:xbin[ ]*$" update-script` != 0 ]
+      then
+        sed -i -e 's/set_perm_recursive\(.*\)SYSTEM:xbin[ ]*$/set_perm_recursive\1SYSTEM:xbin\nset_perm 0 1000 0755 SYSTEM:xbin\/busybox\nrun_program PACKAGE:installbusybox/' update-script
+
+      elif [ `grep -c "write_raw_image .*:boot.img BOOT:" update-script` != 0 ]
+      then
+        sed -i -e 's/write_raw_image \(.*:boot.img\) BOOT:/set_perm 0 1000 0755 SYSTEM:xbin\/busybox\nrun_program PACKAGE:installbusybox\nwrite_raw_image \1 BOOT:/' update-script
+      
+      else
+        echo "set_perm 0 1000 0755 SYSTEM:xbin/busybox" >> update-script      
+        echo "run_program PACKAGE:installbusybox" >> update-script
+      fi
+
+      if [ `grep -c installbusybox update-script` == 0 ]
+      then
+        echo "错误：installbusybox 未添加到 update-script 脚本中!"
+      else
+
+        if [ ! -e ../../../../system/bin/busybox ]
+        then
+          echo "正在添加代码链接到 /system/bin/busybox"
+          sed -i -e 's/set_perm 0 1000 0755 SYSTEM:xbin\/busybox/set_perm 0 1000 0755 SYSTEM:xbin\/busybox\nsymlink \/system\/xbin\/busybox SYSTEM:bin\/busybox/g' update-script
+        fi
+      fi
+    fi
+  fi
+
+else
+  echo "错误：没有检测到 update-script 刷机脚本!"
+fi
+
+cd ../../../../..
+
+scripts/fix_update_script_blanks
+

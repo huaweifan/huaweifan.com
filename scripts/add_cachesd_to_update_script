@@ -1,0 +1,71 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+
+
+cd WORKING_*
+
+if [ -d system/sd ]
+then
+  if [ ! -e move_cache_sd ]
+  then
+
+    echo -n "你是否要移动 dalvik-cache 到 SD卡中 (y/n)? (默认: y): "
+    read do_cachesd
+
+    if [ "$do_cachesd" != "n" ]
+    then
+
+      cd ..
+      scripts/add_busybox
+      cd WORKING_*
+
+      echo "正在添加 move_cache_sd 到ROM定制文件夹中"
+      cp ../tools/apps2sd_files/move_cache_sd .
+
+      cd META-INF/com/google/android 
+
+      if [ `grep -c move_cache_sd update-script` == 0 ]
+      then
+        echo "正在添加 move_cache_sd 到 update-script 刷机脚本中"
+        if [ `grep -c "write_raw_image .*:boot.img BOOT:" update-script` != 0 ]
+        then
+          sed -i -e 's/write_raw_image \(.*boot.img\) BOOT:/run_program PACKAGE:move_cache_sd\nwrite_raw_image \1 BOOT:/' update-script
+        else
+          echo "run_program PACKAGE:move_cache_sd" >> update-script
+        fi
+      fi
+
+      if [ `grep -c move_cache_sd update-script` == 0 ]
+      then
+        echo "错误：move_cache_sd 不能添加到 update-script 刷机脚本中!"
+      else
+        echo "move_cache_sd 已经在 update-script 刷机脚本中!"
+      fi
+
+      cd ../../../..
+
+    fi
+
+  else
+    echo "move_cache_sd 已经在ROM定制文件夹下找到"
+
+  fi
+
+else
+  echo "警告：system/sd 没有在ROM定制文件夹找到!"
+
+fi
+
+cd ..
+scripts/fix_update_script_blanks
+

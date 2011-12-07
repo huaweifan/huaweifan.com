@@ -1,0 +1,105 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+#
+# This script has two optional arguments:
+#
+# $1 = "no_create" or "create" or "create_working 
+#         - must specify no_create if working folder already exists
+# $2 = "kernel_only" or "name_given" - if this is specified then $1 is mandatory
+#
+
+
+if [ "$1" == "no_create" ] 
+then
+  build_dir=`ls | grep -m 1 ^WORKING_`
+
+else
+
+  #
+  # Working folder name
+  #
+  build_dir=`scripts/set_working_folder_name $2` 
+
+  #
+  # Creating folder structure
+  #
+  echo
+  echo "正在创建ROM定制文件夹 $build_dir ..."
+  mkdir $build_dir
+
+  echo "正在从 original_update 复制文件到 $build_dir ..."
+  cp original_update/PDA.tar $build_dir 2>/dev/null
+  cp original_update/CSC.tar $build_dir 2>/dev/null
+  cp original_update/PHONE.tar $build_dir 2>/dev/null
+
+fi
+
+echo
+echo "正在解包 PDA.tar ..."
+
+tar xvf $build_dir/PDA.tar -C $build_dir -x factoryfs.rfs zImage 2>/dev/null
+rm -f $build_dir/PDA.tar
+
+if [ ! -e $build_dir/factoryfs.rfs ]
+then
+  echo
+  echo "错误：不能解包 factoryfs.rfs ！"
+  exit 1
+fi
+
+if [ ! -e $build_dir/zImage ]
+then
+  echo
+  echo "警告：没有发现 zImage"
+else
+  scripts/show_rooted_kernel_msg
+fi
+
+
+
+if [ -e $build_dir/CSC.tar ]
+then
+  echo
+  echo "正在解包 CSC.tar ..."
+
+  tar xvf $build_dir/CSC.tar -C $build_dir -x cache.rfs 2>/dev/null
+  rm -f $build_dir/CSC.tar
+
+  if [ ! -e $build_dir/cache.rfs ]
+  then
+    echo
+    echo "错误：不能解包 cache.rfs ！"
+    exit 1
+  fi
+fi
+
+if [ -e $build_dir/PHONE.tar ]
+then
+  echo
+  echo "正在解包 PHONE.tar ..."
+
+  tar xvf $build_dir/PHONE.tar -C $build_dir -x modem.bin 2>/dev/null
+  rm -f $build_dir/PHONE.tar
+
+  if [ ! -e $build_dir/modem.bin ]
+  then
+    echo
+    echo "错误：不能解包 modem.bin ！"
+    exit 1
+  fi
+fi
+
+scripts/rfs_files_to_working_folder no_create $2
+exit $?
+
+

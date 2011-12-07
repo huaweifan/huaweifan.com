@@ -1,0 +1,95 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+clear
+
+if [ -d WORKING_* ]
+then
+  echo "已经找到ROM定制文件夹"
+else
+  echo "没有找到ROM定制文件夹！"
+  exit 0
+fi
+
+clear
+cd WORKING_*
+
+if [ ! -e system/build.prop ]
+then
+  echo "错误：没有找到 build.prop"
+  cd ..
+  exit 0
+fi
+
+cd system
+
+echo
+
+if [ `grep -c ro.product.version build.prop` == 0 ]
+then
+  id_var=ro.build.display.id
+else
+  id_var=ro.product.version
+fi
+
+
+cd ../..
+current_name=`scripts/get_build_prop_val $id_var`
+
+if [ "$current_name" == "UNKNOWN" ]
+then
+
+  echo "错误：没有找到 $id_var 在 build.prop 中的设置！"
+  cd ../..
+  exit 0
+fi
+
+
+echo
+echo "当前ROM的名称是："
+echo
+echo "$current_name"
+echo
+echo
+echo -n "你是否要对它重新命名 (y/n)? (默认: y): "
+
+read do_rename
+echo
+
+if [ "$do_rename" == "n" ]
+then
+  echo "好的，不任何更改"
+
+else 
+
+  echo -n "请输入新的名称："
+  read new_name
+
+  scripts/set_build_prop_val $id_var "$new_name"
+  current_name=`scripts/get_build_prop_val $id_var`
+
+  echo
+  echo
+  echo "在 build.prop 设置文件中，$id_var 现在设置为:"
+  echo
+  echo "$current_name"
+
+  if [ "$current_name" != "$new_name" ]
+  then
+    echo
+    echo "警告: 名称与指定的不同"
+  fi
+
+fi
+
+echo
+

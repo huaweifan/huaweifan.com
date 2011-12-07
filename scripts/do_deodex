@@ -1,0 +1,234 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+
+while :
+do
+
+  clear
+
+  echo
+  echo "----------------------------------------------------------------"
+  echo  
+  echo "Deodex 操作(或 de-odex)将会把 ROM 中的 *.odex 文件"
+  echo "转换成 classes.dex 文件，并将它们压缩进相应的 *.apk " 
+  echo "或 framework 中的 *.jar 文件。"
+  echo ""
+  echo "Deodex 操作的含义是使 ROM 变得定制化和轻便化。它将你的文件放在一起，使它们"
+  echo "能够用于 themes，icons，trackball/trackpad，modifications，etc 。"
+  echo
+  echo "此过程通常需要几分钟或几十分钟时间，并且这些文件不需要你签名。"
+  echo
+  echo "----------------------------------------------------------------"
+  echo
+
+  if [ ! -d WORKING_* ]
+  then
+    echo 没有找到ROM定制文件夹！
+    scripts/press_enter
+    exit 0
+  fi
+
+  cd WORKING_*
+
+  if [ ! -d system/app ]
+  then
+    echo "system/app 丢失！"
+    cd ..
+    scripts/press_enter
+    exit 0
+  fi
+
+  if [ ! -d system/framework ]
+  then
+    echo "system/framework 丢失！"
+    cd ..
+    scripts/press_enter
+    exit 0
+  fi
+
+
+  num_odex=`find . | grep -c "\.odex$"`
+
+  if [ "$num_odex" == "0" ]
+  then
+    echo "没有找到 *.odex 文件，不需要进行 Deodex 操作！"
+    cd ..
+    scripts/press_enter
+    exit 0
+
+  else
+
+    num_odex_fr=`find system/framework | grep -c "\.odex$"`
+    num_odex_app=`find system/app | grep -c "\.odex$"`
+
+    echo "已在 system/framework 中找到 $num_odex_fr *.odex 文件"
+    echo "已在 system/app 中找到 $num_odex_app *.odex 文件"
+
+    if [ $num_odex_fr == 0 ] && [ $num_odex_app -gt 0 ]
+    then
+      echo
+      echo "警告: 如果 framework 文件夹已经进行了 Deodex 操作，则 app 文件夹"
+      echo "     也必须进行 Deodex 操作！"
+    fi
+
+
+    cd ..
+    scripts/convert_to_unix tools/deodex_files/api_level.txt    
+    api_level=`scripts/get_api_level`
+    cd WORKING_*
+
+
+    #
+    # Show menu choices
+    #
+
+    echo
+    echo "请输入选择项:"
+    echo
+
+    if [ $num_odex_app -gt 0 ] && [ $num_odex_fr -gt 0 ]
+    then
+      echo " bb  = 备份两个文件夹(推荐先操作此项！)"
+    fi
+
+    echo "  v  = 设置你的Android OS版本 (当前API级别 = $api_level)"
+
+    if [ $num_odex_fr -gt 0 ]
+    then
+      echo "  f  = Deodex /system/framework 文件夹"
+    fi
+    if [ $num_odex_app -gt 0 ]
+    then
+      echo "  a  = Deodex /system/app 文件夹"
+    fi
+    if [ $num_odex_app -gt 0 ] && [ $num_odex_fr -gt 0 ]
+    then
+      echo "  b  = Deodex 两个文件夹(推荐)"
+    fi
+    echo "  s  = Deodex 单个文件"
+    echo "  x  = 退出"
+    echo
+    echo -n "? "
+
+    read enterChoice
+
+    list1=( app )
+    list2=( framework )
+    list3=( framework app )
+
+    if [ "$enterChoice" == "a" ]
+    then
+      dir_list=app
+    elif [ "$enterChoice" == "v" ]
+    then
+      cd ..
+      scripts/change_api_level
+      continue
+    elif [ "$enterChoice" == "f" ] 
+    then
+      dir_list=framework
+    elif [ "$enterChoice" == "b" ] 
+    then
+      dir_list="framework app"
+    elif [ "$enterChoice" == "s" ]
+    then
+      cd ..
+      scripts/choose_single_deodex
+      continue
+    elif [ "$enterChoice" == "bb" ]
+    then
+
+      #
+      # Backup
+      #
+
+      folder_list=( framework app )
+      date_str=`date '+%m%d%y_%H%M%S'`
+
+      for f in ${folder_list[@]}
+      do
+
+        backup_folder="old_`echo -n $f`_$date_str"
+        cd system/$f
+
+        echo
+        echo "正在ROM定制文件夹外创建备份文件夹 $backup_folder ..."
+        mkdir ../../../$backup_folder
+        cp  * ../../../$backup_folder/
+        echo "完成备份 $f 文件夹。"
+
+        cd ../..
+      done
+
+      cd ..
+      scripts/press_enter
+      continue
+
+    elif [ "$enterChoice" == "x" ]
+    then
+      cd ..
+      exit 0
+    else
+      cd ..
+      continue
+    fi
+  fi
+
+
+  sgs2_fix=no
+
+  # Add java.awt.jar to framework folder (fix Email.apk and MobilePrint.apk)
+  # - Thanks to xeudoxus
+  if [ `echo $dir_list | grep -c app` -gt 0 ] && \
+      [ -e system/framework/com.samsung.device.jar ] && [ ! -e system/framework/java.awt.jar ]
+  then
+    if [ -e system/app/Email.apk ] || [ -e system/app/MobilePrint.apk ] 
+    then
+      sgs2_fix=yes
+      cp -f ../tools/samsung_files/java.awt.jar system/framework/
+    fi
+  fi
+
+  cd ..
+  scripts/do_deodex_folder "$dir_list"
+
+  cd WORKING_*
+
+  if [ "$sgs2_fix" == "yes" ]
+  then
+    rm -f system/framework/java.awt.jar
+  fi
+
+  num_odex_app=`find system/app | grep -c "\.odex$"`
+  num_odex_fr=`find system/framework | grep -c "\.odex$"`
+
+  echo
+  echo "$num_odex_app *.odex 文件保留在 system/app"
+  echo "$num_odex_fr *.odex 文件保留在 system/framework"
+
+  if [ $num_odex_fr == 0 ] && [ $num_odex_app -gt 0 ]
+  then
+    echo
+    echo "警告: 如果 framework 文件夹已经进行了 Deodex 操作，则 app 文件夹"
+    echo "     也必须进行 Deodex 操作！"
+  fi
+
+  cd ..
+  scripts/press_enter
+
+  if [ $num_odex_fr == 0 ] && [ $num_odex_app == 0 ]
+  then
+    exit 0
+  fi
+
+done

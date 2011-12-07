@@ -1,0 +1,164 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+clear
+
+if [ -d MY_DEVICE_WORKING ]
+then
+  echo "正在移除 MY_DEVICE_WORKING 文件夹"
+  rm -rf MY_DEVICE_WORKING
+fi
+
+if [ -d MY_KERNEL ]
+then
+  echo "正在移除 MY_KERNEL 文件夹"
+  rm -rf MY_KERNEL
+fi
+
+if [ -d BOOT-EXTRACTED ]
+then
+  echo "正在移除 BOOT-EXTRACTED 文件夹"
+  rm -rf BOOT-EXTRACTED
+fi
+
+
+
+clear
+echo
+echo "*************************************************************"
+echo
+echo "--> 专为您目前的设备 获得一个 ROM <--"
+echo
+echo "*************************************************************"
+
+scripts/check_rom no_info kernel_only
+
+# If working folder is open and cannot move it, handle the error properly
+if [ "$?" != "1" ]
+then
+  scripts/press_enter
+else
+  exit 1
+fi
+
+if [ -d WORKING_* ]
+then
+
+  cd WORKING_*
+
+  if [ -d system ]
+  then
+
+    if [ -e zImage ]
+    then
+      mkdir ../BOOT-EXTRACTED
+      cp -v zImage ../BOOT-EXTRACTED/
+      cd ..
+
+    else
+      cd ..
+      scripts/ensure_boot_extracted
+    fi
+
+  else
+    cd ..
+    exit 0
+  fi
+
+else
+  exit 0
+fi
+
+if [ ! -d BOOT-EXTRACTED ]
+then
+  echo "错误:没有找到 BOOT-EXTRACTED 文件夹"
+  exit 0
+fi
+
+
+echo 
+echo "正在重命名ROM定制件夹为 MY_DEVICE_WORKING ..."
+mv WORKING_* MY_DEVICE_WORKING
+
+echo
+echo "正在创建文件夹 MY_KERNEL ..."
+mkdir MY_KERNEL
+
+
+
+#
+# Copy my device's kernel to MY_KERNEL
+# Also copy my device's modules/drivers to MY_KERNEL
+#
+
+echo "正在复制 zImage 到 MY_KERNEL ..."
+cp BOOT-EXTRACTED/zImage MY_KERNEL/
+
+#
+# We need this step so that we can determine base address
+# when porting!
+#
+echo "正在复制 boot.img 到 MY_KERNEL ..."
+cp MY_DEVICE_WORKING/boot.img MY_KERNEL/
+
+
+if [ -d MY_DEVICE_WORKING/system/lib/modules ]
+then
+  mkdir -p MY_KERNEL/system/lib/modules
+  echo 
+  echo "正在复制 wireless (system/lib/modules) ..."
+  cp -r MY_DEVICE_WORKING/system/lib/modules/* MY_KERNEL/system/lib/modules/
+fi
+
+if [ -d MY_DEVICE_WORKING/system/usr ]
+then
+  mkdir -p MY_KERNEL/system/usr
+  echo 
+  echo "正在复制 buttons (system/usr) ..."
+  cp -r MY_DEVICE_WORKING/system/usr/* MY_KERNEL/system/usr/
+fi
+
+if [ -d MY_DEVICE_WORKING/system/lib/hw ]
+then
+  mkdir -p MY_KERNEL/system/lib/hw
+  echo 
+  echo "正在复制 lights (system/lib/hw) ..."
+  cp -r MY_DEVICE_WORKING/system/lib/hw/* MY_KERNEL/system/lib/hw/
+fi
+
+if [ -e MY_DEVICE_WORKING/system/etc/vold.fstab ]
+then
+  mkdir -p MY_KERNEL/system/etc
+  echo 
+  echo "正在复制存储卡挂载信息(system/etc/vold.fstab) ..."
+  cp -v MY_DEVICE_WORKING/system/etc/vold.fstab MY_KERNEL/system/etc/
+fi
+
+if [ -e MY_DEVICE_WORKING/system/etc/vold.conf ]
+then
+  mkdir -p MY_KERNEL/system/etc
+  echo 
+  echo "正在复制存储卡挂载信息(system/etc/vold.conf) ..."
+  cp -v MY_DEVICE_WORKING/system/etc/vold.conf MY_KERNEL/system/etc/
+fi
+
+if [ -d MY_DEVICE_WORKING/system/modules ]
+then
+  mkdir -p MY_KERNEL/system/modules
+  echo 
+  echo "正在复制其它模块(system/modules) ..."
+  cp -r MY_DEVICE_WORKING/system/modules/* MY_KERNEL/system/modules/
+fi
+
+
+rm -rf BOOT-EXTRACTED
+

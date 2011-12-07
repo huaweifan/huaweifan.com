@@ -1,0 +1,420 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+if [ "$1" != "no_clear" ]
+then
+  clear
+fi
+
+temp=`ls WORKING_* 2>/dev/null`
+res=$?
+
+if [ "$res" == "2" ]
+then
+  echo
+  echo "没有找到ROM定制文件夹"
+  scripts/press_enter
+  exit 1
+fi
+
+cd WORKING_*
+
+if [ ! -e META-INF/com/google/android/update-script ]
+then
+  echo
+  echo "META-INF/com/google/android/update-script 没有找到！"
+  cd ..
+  scripts/press_enter
+  exit 1
+fi
+
+cd ..
+scripts/fix_update_script_blanks
+
+# This file may have been left behind earlier, if script was terminated
+# unexpectedly
+rm -f symlinks.log
+
+
+echo
+echo "验证 META-INF/com/google/android/update-script"
+echo "-------------------------------------------------------------------"
+echo  
+echo "ROM定制工具将会检查 update-script 是否有错误，这样你就可以发现并诊断潜在的问题，"
+echo "在刷机的过程中（有时错误的消息可能会描述不准确）。"
+echo 
+echo "请注意脚本将无法检测到每一个可能的错误，也可能报告虚假警报。"
+echo "另外，根据update-script的大小，它可能需要几分钟才能完成。"
+echo
+echo "-------------------------------------------------------------------"
+echo
+
+if [ "$1" != "no_clear" ]
+then
+  echo -n "是否检验 update-script 是否有错误 (y/n)? (默认: y): "
+  read do_verify
+
+  if [ "$do_verify" == "n" ]
+  then
+    exit 0
+  else
+    clear
+  fi
+else
+
+  echo -n "是否检验 update-script 是否有错误 (y/n)? (默认: n): "
+  read do_verify
+
+  if [ "$do_verify" != "y" ]
+  then
+    exit 0
+  fi
+fi
+
+
+echo
+cd WORKING_*
+
+#
+# Remove commas at end of line (special syntax)
+#
+sed -i -e ':a;N;$!ba;s/,\n[ ]*/, /g' META-INF/com/google/android/update-script
+
+
+#
+# Get number of lines from file
+#
+num_lines=`sed -n '$=' META-INF/com/google/android/update-script`
+
+echo "update-script 有 $num_lines 命令行"
+echo
+
+errors_found=0
+resolve_conflicts=0
+resolved=0
+
+for (( i = 1 ; i <= $num_lines ; i++ ))
+do
+
+  expect_path=
+  expect_path2=
+  not_expect_path=
+
+  error_now=0
+  symlink=0
+
+
+  #
+  # Read current line in file
+  #
+
+  curr_line=`sed -n $i\\p META-INF/com/google/android/update-script`
+  echo "$i/$num_lines: $curr_line"
+
+
+  #
+  # Revise the current line so that it can be parsed easier
+  #
+  curr_line=`echo $curr_line | \
+            sed -e 's/PACKAGE://g' -e 's/SYSTEM:/system\//g' -e 's/DATA:/data\//g'`
+
+
+  #
+  # Is line a comment?
+  #
+
+  comment_result=`echo $curr_line | sed -e 's/^#.*//g'`
+
+  if [ "$comment_result" == "" ]
+  then
+    continue
+  fi
+
+
+  #
+  # Does line refer to "TMP" partition?
+  #
+
+  tmp_result=`echo $curr_line | grep TMP:`
+
+  if [ "$tmp_result" != "" ]
+  then  
+    errors_found=$(($errors_found+1))           
+    echo ">> 警告：TMP分区是不支持 update-script 刷机脚本，"
+    echo ">>      你必须转换到一个更新 updater-script 脚本。"
+    continue
+  fi
+
+  first_word=`echo $curr_line | sed -e 's/[ ]*\([^ ]*\) .*/\1/'`
+
+  case "$first_word" in
+
+    "copy_dir") \
+      expect_path=`echo $curr_line | sed -e 's/copy_dir[ ]*\([^ ]*\)[ ]*[^ ]*/\1/'`
+      expect_path2=`echo $curr_line | sed -e 's/copy_dir[ ]*[^ ]*[ ]*\([^ ]*\)/\1/'`
+      if [ "`echo $expect_path2 | grep -c SDCARD:`" != "0" ]
+      then
+        expect_path2=
+      fi
+
+      ;;
+
+    "symlink") \
+      symlink=1
+      expect_path=`echo $curr_line | sed -e 's/symlink[ ]*\([^ ]*\)[ ]*[^ ]*/\1/'`
+      not_expect_path=`echo $curr_line | sed -e 's/symlink[ ]*[^ ]*[ ]*\([^ ]*\)/\1/'`
+      echo "$not_expect_path " >> ../symlinks.log
+      ;;
+
+    "set_perm_recursive") \
+      expect_path=`echo $curr_line | \
+           sed -e 's/set_perm_recursive[ ]*[^ ]*[ ]*[^ ]*[ ]*[^ ]*[ ]*[^ ]*[ ]*\([^ ]*\)/\1/'`
+      
+      #
+      # Check for location of SYSTEM: permissions in update-script
+      #
+      if [ `echo $curr_line | grep set_perm_recursive | grep -c "system/[ ]*$"` != 0 ]
+      then
+
+        #
+        # Check for references to subfolders under SYSTEM:
+        #
+        grep_first_line=`grep -n set_perm_recursive META-INF/com/google/android/update-script | grep -v "SYSTEM:[ ]*$" | grep -m 1 SYSTEM:[a-z0-9]*`
+
+        if [ "$grep_first_line" != "" ]
+        then
+          first_line_num=`echo $grep_first_line | sed -e 's/\([0-9]*\).*/\1/'`
+
+          if [ $first_line_num -lt $i ]
+          then
+            errors_found=$(($errors_found+1))
+            echo ">> 警告：在覆盖 $grep_first_line 中的权限设置 ..."
+          fi
+        fi
+
+        #
+        # Check for another occurrence of root folder of SYSTEM: 
+        #
+        grep_first_line=`grep -n set_perm_recursive META-INF/com/google/android/update-script | grep "SYSTEM:[ ]*$"`
+        if [ "$grep_first_line" != "" ]
+        then
+          first_line_num=`echo $grep_first_line | sed -e 's/\([0-9]*\).*/\1/'`
+
+          if [ $first_line_num -lt $i ]
+          then
+            errors_found=$(($errors_found+1))
+            echo ">> 警告：同一文件夹中被引用在 $grep_first_line"
+          fi
+        fi
+      fi
+      ;;
+  
+    "set_perm") \
+      expect_path=`echo $curr_line | \
+           sed -e 's/set_perm[ ]*[^ ]*[ ]*[^ ]*[ ]*[^ ]*[ ]*\([^ ]*\)/\1/'`
+      ;;
+ 
+    "run_program") \
+      expect_path=`echo $curr_line | \
+           sed -e 's/run_program[ ]*\([^ ]*\)[ ]*.*/\1/'`
+
+      if [ `echo $expect_path | grep -c "^sbin/"` == 1 ]
+      then
+        continue
+      fi
+
+      ;;
+
+    "write_raw_image") \
+      expect_path=`echo $curr_line | \
+           sed -e 's/write_raw_image[ ]*\([^ ]*\)[ ]*.*/\1/'`
+      ;;
+
+    "write_radio_image") \
+      expect_path=`echo $curr_line | \
+           sed -e 's/write_radio_image[ ]*\([^ ]*\)[ ]*.*/\1/'`
+      ;;
+
+    "format") \
+      partition=`echo $curr_line | \
+           sed -e 's/format[ ]*\([^ ]*\)[ ]*.*/\1/'`
+      if [[ "$partition" != "system/" && "$partition" != "data/" && \
+          "$partition" != "BOOT:" && "$partition" != "CACHE:" && \
+          "$partition" != "RECOVERY:" && "$partition" != "SDCARD:" ]]
+      then
+        errors_found=$(($errors_found+1))
+        echo ">> 警告：无法识别的分区"
+      fi
+
+      #
+      # Ensure that the 'format' keyword doesn't come after copy_dir of the partition
+      #
+      if [[ "$partition" == "system/" || "$partition" == "data/" ]]
+      then
+
+          # Find line number of the copy_dir line
+          
+          if [ "$partition" == "system/" ]
+          then  
+            orig_name=SYSTEM:
+          else
+            orig_name=DATA:
+          fi
+
+          grep_line=`grep -n -m 1 "copy_dir .* $orig_name" META-INF/com/google/android/update-script`
+
+          if [ "$grep_line" != "" ]
+          then
+            grep_line_num=`echo $grep_line | sed -e 's/\([0-9]*\).*/\1/'`
+
+            if [ $grep_line_num -lt $i ]
+            then
+              errors_found=$(($errors_found+1))
+              echo ">> 错误：不能在文件已经复制到了后再格式化这个分区！"
+            fi
+          fi
+
+      fi
+
+      ;;
+
+    "package_extract_file") \
+      expect_path=`echo $curr_line | \
+           sed -e 's/package_extract_file[ ]*\([^ ]*\)[ ]*.*/\1/'`
+
+      errors_found=$(($errors_found+1))           
+      echo ">> 警告： update-script 脚本不支持 package_extract_file 命令。"
+      echo ">>       但是，不要删除此行。转换文件为 updater-script 脚本。"
+      ;;
+
+    "show_progress") \
+      ;;
+
+    "delete") \
+      ;;
+
+    "delete_recursive") \
+      ;;
+
+    "assert") \
+      ;;
+
+    *) \
+
+      grep_cmd=`echo $first_word | grep -c "assert("`
+      if [ $grep_cmd == 1 ]
+      then
+        continue
+      fi
+
+      errors_found=$(($errors_found+1))
+      echo ">> 警告：命令 \"$first_word\" 没有被脚本认可"
+      ;;
+  esac
+
+  #
+  # Verify the paths
+  #
+
+  var_list=( $expect_path $expect_path2 $not_expect_path )
+
+  for var in ${var_list[@]}
+  do
+
+    # Remove slash in front of path
+    var=`echo $var | sed 's/^\///g'`
+
+    if [ "$var" != "" ]
+    then
+      if [ "$var" != "$not_expect_path" ] && [ ! -e $var ]
+      then
+
+        if [ $symlink == 1 ] && [ `echo $var | grep -c /` == 0 ]
+        then
+
+          # Check if it's something like 'busybox', 'toolbox', etc.
+          # and not a full path
+
+          find_result=`find . -name $var`
+          if [ "$find_result" == "" ]
+          then
+            errors_found=$(($errors_found+1))
+            echo ">> 错误：$var 在ROM定制文件夹中未找到"
+            break
+          fi
+
+        else
+
+          if [ ! -e ../symlinks.log ] || [ `grep -c "$var " ../symlinks.log` == 0 ]
+          then
+            errors_found=$(($errors_found+1))
+            echo ">> 警告：$var 在ROM定制文件夹中未找到"
+            break
+          fi
+        fi
+
+      fi 
+
+      if [ "$var" == "$not_expect_path" ] && [ -e $var ]
+      then
+        errors_found=$(($errors_found+1))
+        echo ">> 错误：$var 在ROM定制文件夹中已找到"
+
+        #
+        # Automatically fix symlink conflicts
+        #
+
+        if [ "$resolve_conflicts" == "0" ]
+        then
+          echo -n "是否自动修复所有的符号链接冲突 (y/n)? (默认: y): "
+          read ask_delete
+
+          if [ "$ask_delete" != "n" ]
+          then
+            resolve_conflicts=1
+          fi
+        fi
+
+        if [ "$resolve_conflicts" == "1" ]
+        then
+          rm -rfv $var
+          if [ "$?" == "0" ]
+          then
+            resolved=$(($resolved+1))
+          fi
+        fi
+      fi   
+    fi
+  done
+
+done
+
+cd ..
+
+rm -f symlinks.log
+
+echo
+if [ "$errors_found" != "0" ]
+then
+  echo "发现问题 $errors_found 。请检查 update-script 脚本，以确保它是正确的。"
+
+  if [ "$resolve_conflicts" == "1" ]
+  then
+    echo
+    echo "解决符号链接的冲突数量：$resolved"
+  fi
+
+else
+  echo "没有发现问题。"
+fi
+
+scripts/update_script_should_convert_back
+scripts/press_enter

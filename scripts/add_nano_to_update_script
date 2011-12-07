@@ -1,0 +1,59 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+
+cd WORKING_*
+cd META-INF/com/google/android
+
+echo
+
+if [ -e update-script ]
+then
+
+  if [ "`grep -om 1 nano update-script`" == "nano" ]
+  then
+    echo "update-script 刷机脚本中已经有 nano 相关代码"
+
+  else
+
+    #
+    # Do this to prevent conflicts with the update-script in ROMs that already have the binary
+    #
+    if [ -e ../../../../system/bin/nano ]
+    then
+
+      if [ "`find ../../../../system/xbin -name nano`" == "" ]
+      then
+        echo "正在复制 system/bin/nano 到 system/xbin/nano"
+        cp -f ../../../../system/bin/nano ../../../../system/xbin/nano
+      fi
+    fi
+
+    echo "正在添加 nano 的相关代码到 update-script 刷机脚本中"
+    sed -i -e 's/set_perm 0 2000 0550 SYSTEM:etc\/init.goldfish.sh/set_perm 0 2000 0550 SYSTEM:etc\/init.goldfish.sh\nset_perm 0 0 04755 SYSTEM:xbin\/nano\n/g' update-script
+
+
+    if [ "`grep -om 1 nano update-script`" != "nano" ]
+    then
+      echo "错误：无法更新 nano 相关代码到 update-script 脚本中"
+    fi
+  fi
+
+else
+  echo "错误：update-script 刷机脚本没有找到 ！"
+  cd ../../../../..
+  exit 1
+fi
+
+cd ../../../../..
+
+scripts/fix_update_script_blanks

@@ -1,0 +1,75 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+clear
+
+if [ ! -e tools/deodex_files/api_level.txt ]
+then
+  echo "错误：无法找到 tools/deodex_files/api_level.txt"
+  scripts/press_enter
+  exit 0
+fi
+
+api_level=`scripts/get_api_level`
+
+echo
+echo "ROM定制工具里有当前API的级别设置为： $api_level"
+echo "确保您已设置为您的ROM正确的API级别！"
+echo
+echo "每个API级别对应到至少一个Android操作系统版本。"
+echo
+echo "e.g.  Android 4.0       = API Level 14"
+echo "      Android 3.2       = API Level 13"
+echo "      Android 3.1.x     = API Level 12"
+echo "      Android 3.0.x     = API Level 11"
+echo "      Android 2.3.3+    = API Level 10"
+echo "      Android 2.3-2.3.2 = API Level 9"
+echo "      Android 2.2.x     = API Level 8"
+echo
+echo "一套完整的映射是："
+echo "http://developer.android.com/guide/appendix/api-levels.html"
+echo
+echo -n "是否要更改当前的 API 级别 (y/n)? (默认: n): "
+
+read do_change
+echo
+
+if [ "$do_change" != "y" ]
+then
+  echo "好了，什么也不会改变"
+else 
+
+  echo -n "请输入新的级别（目前为：$ api_level）："
+  read set_level
+  
+  if [ "`echo $set_level | sed 's/[0-9]*//'`" != "" ]
+  then
+    echo
+    echo "警告：无效的输入 - 什么都不会改变"
+  else    
+
+    echo $set_level > tools/deodex_files/api_level.txt
+    current_level=`scripts/get_api_level`
+
+    echo
+    echo "在 api_level.txt 文件中，现在在API级别设置为：$current_level"
+
+    if [ "$current_level" != "$set_level" ]
+    then
+      echo
+      echo "警告：名称和指定的不相同"
+    fi
+  fi
+fi
+
+scripts/press_enter
+

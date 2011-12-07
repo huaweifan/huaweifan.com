@@ -1,0 +1,19 @@
+
+echo
+echo Just a sample
+echo
+
+if [ -d WORKING_* ]
+then
+  echo 已经找到ROM定制文件夹
+else
+  echo 没有找到ROM定制文件夹
+  exit 0
+fi
+
+cd WORKING_*
+echo `pwd`
+echo
+ls -lrt
+cd ..
+

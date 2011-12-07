@@ -1,0 +1,73 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+
+cd WORKING_*
+cd META-INF/com/google/android
+
+if [ -e update-script ]
+then
+
+  #
+  # Deleting any existing lines that end with 'bin/su' to prevent conflicts
+  #
+  sed -i -e '/bin\/su[ ]*$/d' update-script
+
+  #
+  # Do this to prevent conflicts with the update-script in ROMs that already have the binary
+  #  
+  if [ -e ../../../../system/xbin/su ]
+  then
+
+    if [ "`find ../../../../system/bin -name su`" == "" ]
+    then
+      echo "正在移动 system/xbin/su 到 system/bin/su"
+      mkdir -p ../../../../system/bin
+      mv -f ../../../../system/xbin/su ../../../../system/bin/su
+    else
+      echo "/system/bin/su 已找到, 正在删除 /system/xbin/su ..."
+      rm -f ../../../../system/xbin/su
+    fi
+
+  elif [ "`find ../../../../system/bin -name su`" == "" ]
+  then
+    echo "错误：/system/xbin/su 和 /system/bin/su 没有找到！"
+    cd ../../../../..
+    echo
+    exit 0
+  fi
+
+  echo
+  echo "正在添加 su 相关代码链接到 update-script 刷机脚本中"
+  sed -i -e 's/etc\/init.goldfish.sh/etc\/init.goldfish.sh\nset_perm 0 0 06755 SYSTEM:bin\/su\nsymlink \/system\/bin\/su SYSTEM:xbin\/su/g' update-script
+
+  if [ ! -d ../../../../system/xbin ]
+  then
+    echo "正在创建 /system/xbin 文件夹 ..."
+    mkdir -p ../../../../system/xbin
+    touch ../../../../system/xbin/placeholder
+  fi
+
+
+  if [ `grep -c "/bin/su " update-script` == 0 ]
+  then
+    echo "错误：无法在 update-script 刷机脚本中添加 su 相关代码！"
+  fi
+
+else
+  echo "错误：没有找到 update-script 刷机脚本！"
+fi
+
+cd ../../../../..
+
+scripts/fix_update_script_blanks
+

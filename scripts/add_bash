@@ -1,0 +1,64 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+clear
+
+echo
+echo "----------------------------------------------------------------"
+echo  
+echo "bash的命令shell命令行完成非常方便。"
+echo "当你的Android设备上使用终端仿真器（如ConnectBot）。"
+echo "要启动一个shell，请键入：bash"
+echo
+echo "----------------------------------------------------------------"
+echo 
+
+echo -n "继续安装 (y/n)? (默认: y): "
+read do_install
+
+if [ "$do_install" == "n" ]
+then
+  exit 0
+fi
+
+echo 
+
+if [ -d WORKING_* ]
+then
+  echo 已发现ROM定制文件夹
+else
+  echo 未发现ROM定制文件夹!
+  exit 0
+fi
+
+cd WORKING_*
+
+if [ ! -d system ]
+then
+  echo "未发现 system 文件夹!"
+  cd ..
+  exit 0
+fi
+
+
+bash_path=`find . -name bash`
+if [ "$bash_path" == "" ] 
+then
+  echo "正在添加 /system/bin/bash"
+  cp ../tools/bash system/bin/
+else
+  echo "已发现 $bash_path"
+fi
+
+cd ..
+scripts/add_bash_to_update_script
+

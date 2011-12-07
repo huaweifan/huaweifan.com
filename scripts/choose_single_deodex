@@ -1,0 +1,120 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+
+clear
+
+
+echo
+
+api_level=`scripts/get_api_level`
+
+cd WORKING_*
+
+grep_cmd=`find . | grep \\.odex$ | sort -f`
+
+if [ "$grep_cmd" == "" ]
+then
+  echo "错误: 没有发现文件！"
+  cd ..
+  scripts/press_enter
+  exit 0
+fi
+
+count=0
+
+rm -f ../temp.list
+
+echo >> ../temp.list
+echo "所有 ODEX 文件:" >> ../temp.list
+echo >> ../temp.list
+
+for filename in $grep_cmd 
+do
+  count=$(($count+1))
+
+  # Store file names in an array
+  file_array[$count]=$filename
+  echo "  ($count) $filename" >> ../temp.list
+done
+
+more ../temp.list
+rm -f ../temp.list
+
+echo
+echo -n "Enter file number (0 = cancel): "
+
+read enterNumber
+
+if [ "$enterNumber" == "0" ]
+then
+  cd ..
+  exit 0
+
+# Verify input is a number
+elif [ "`echo $enterNumber | sed 's/[0-9]*//'`" == "" ]
+then
+
+  file_chosen=${file_array[$enterNumber]}
+
+  if [ "$file_chosen" == "" ]
+  then
+    cd ..
+    exit 0
+  fi
+
+  cp -f ../tools/deodex_files/baksmali-*.jar baksmali.jar
+  cp -f ../tools/deodex_files/smali-*.jar smali.jar
+
+  try_again=y
+
+  while [ "$try_again" != "n" ]
+  do
+    echo
+    echo "输入任何指定依赖的 JAR 文件，并将多个文件用冒号隔开 (回车键=没有)。"
+		echo "注意: 跳过错误，输入 'ignore' 通过自身或存在依赖关系"
+		echo    
+		echo -n "$file_chosen > "
+    read classfiles
+    echo
+
+		if [ "$classfiles" == "ignore" ]
+		then
+			classfiles="none yes"
+		else
+			classfiles=`echo $classfiles | sed -e 's/ ignore/ yes/g'`
+		fi
+
+    ../scripts/do_deodex_file $api_level $file_chosen system/framework $classfiles 
+
+    result=$?
+
+    if [ "$result" == 1 ]
+    then
+      echo
+      echo -n "再尝试一次 $file_chosen (y/n)? (默认为: y): "
+      read try_again
+      echo
+    else
+      break
+    fi
+
+  done
+
+  rm -f *smali.jar
+
+fi
+
+
+cd ..
+scripts/press_enter
+

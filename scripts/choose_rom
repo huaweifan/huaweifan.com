@@ -1,0 +1,178 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+#
+# This script has two optional arguments:
+#
+# $1 = "kernel_only" - dont't modify any files after extraction 
+#    = "name_given" - if this is used, then $2 is mandatory
+# $2 = ROM name under original_update (specify only if $1 = "name_given")
+#
+
+
+if [ "$1" == "name_given" ]
+then
+
+  file_chosen=$2
+
+  if [ "$file_chosen" == "" ]
+  then
+    echo "错误: ROM 名称未被指定！"
+    cd ..
+    exit 0
+  fi
+
+  if [ ! -e original_update/$file_chosen ]
+  then
+    echo "错误: 没有发现 original_update/$file_chosen ！"
+    exit 0
+  fi
+  
+else
+
+  #
+  # This script will search original_update for available ROMs
+  #
+  grep_cmd=`scripts/grep_roms`
+
+  if [ "$grep_cmd" == "" ]
+  then
+    echo "错误: 没有在 original_update 文件夹下发现 ROM 文件！"
+    exit 0
+  fi
+
+  count=0
+  rm -f temp.list
+
+  echo >> temp.list
+  echo "Available ROMs:" >> temp.list
+  echo >> temp.list
+
+  for filename in $grep_cmd 
+  do
+    count=$(($count+1))
+
+    filename=`echo $filename | sed 's/temp_space/ /g'`
+
+    # Store file names in an array
+    file_array[$count]=$filename
+
+    if [ "$filename" == "system.img" ]
+    then
+      filename="system.img and boot.img"
+
+    elif [ "$filename" == "factoryfs.rfs" ]
+    then
+      filename="factoryfs.rfs, cache.rfs and zImage"
+
+    elif [ "$filename" == "factoryfs.img" ]
+    then
+      filename="factoryfs.img, cache.img and zImage"
+
+    elif [ "$filename" == "PDA.tar.md5" ]
+    then
+      filename="PDA.tar.md5, CSC.tar.md5 and PHONE.tar.md5"
+
+    elif [ "$filename" == "PDA.tar" ]
+    then
+      filename="PDA.tar, CSC.tar and PHONE.tar"
+    fi
+
+    echo "  ($count) $filename" >> temp.list
+  done
+
+  more temp.list
+  rm -f temp.list
+
+  echo
+  echo -n "请输入选择的数字选项 (默认=1, 取消=0): "
+
+  read enterNumber
+  echo
+
+  if [ "$enterNumber" == "0" ]
+  then
+    exit 0
+  fi
+
+  if [ "$enterNumber" == "" ]
+  then
+    enterNumber=1
+  fi
+
+  if [ "`echo $enterNumber | sed 's/[0-9]*//'`" == "" ] || [ "enterNumber"=="1" ]
+  then
+    file_chosen=${file_array[$enterNumber]}
+
+    if [ "$file_chosen" == "" ]
+    then
+      exit 0
+    fi
+  else
+    exit 0
+  fi
+
+fi
+
+
+if [ ! -d "original_update/$file_chosen" ]
+then
+
+  if [ "$file_chosen" == "system.img" ]
+  then
+    scripts/img_files_to_working_folder create_working $1
+    exit $?
+
+  elif [ "$file_chosen" == "factoryfs.rfs" ]
+  then
+    scripts/rfs_files_to_working_folder create_working $1
+    exit $?
+
+  elif [ "$file_chosen" == "PDA.tar" ]
+  then
+    scripts/sgs_tar_files_to_working_folder create_working $1
+    exit $?
+
+  elif [ "$file_chosen" == "PDA.tar.md5" ]
+  then
+    scripts/sgs_tarmd5_files_to_working_folder create_working $1
+    exit $?
+
+  elif [ "$file_chosen" == "factoryfs.img" ]
+  then
+    scripts/simg_files_to_working_folder create_working $1
+    exit $?
+
+  elif [ "`echo $file_chosen | grep -i \\.zip$`" != "" ]
+  then
+    scripts/zip_file_to_working_folder "$file_chosen" $1
+    exit $?
+
+  elif [ "`echo $file_chosen | grep -i \\.tar$`" != "" ]
+  then
+    scripts/tar_file_to_working_folder "$file_chosen" $1
+    exit $?
+
+  elif [ "`echo $file_chosen | grep -i \\.app$`" != "" ]
+  then
+    scripts/app_file_to_working_folder "$file_chosen" $1
+    exit $?
+  fi
+
+else
+  if [ "`echo $file_chosen | grep -m 1 \"^WORKING_\"`" != "" ]
+  then
+    scripts/wkg_to_working_folder "$file_chosen" $1
+    exit $?
+  fi 
+fi
+

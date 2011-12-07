@@ -1,0 +1,236 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+
+if [ "$1" == "show_help" ]
+then
+
+  clear
+  echo
+  echo "-----------------------------------------------------------------"
+  echo  
+  echo "BusyBox Run-Parts 功能允许设备启动时按序执行"
+  echo "/system/etc/init.d 中的脚本。"
+  echo 
+  echo "通常的脚本名称，开始用一个数字来表示，从而他们将按顺序被执行。"
+  echo
+  echo "-----------------------------------------------------------------"
+  echo
+
+  echo -n "继续添加 Run-Parts 功能 (y/n)? (默认: y): "
+  read do_runparts
+
+  if [ "$do_runparts" == "n" ]
+  then
+    exit 0
+  fi
+
+
+elif [ "$1" == "for_apps2sd" ]
+then
+
+  echo
+  echo "可选：您可以决定增加 Busybox Run-Parts 方法的apps2sd。"
+  echo "          此选项允许您在 /system/etc/init.d运行脚本,"
+  echo "          而不是仅仅为 a2sd."
+  echo
+  echo -n "你是否想实现 BusyBox Run-Parts 方法 (y/n)? (默认: n): "
+  read do_runparts
+
+  if [ "$do_runparts" != "y" ]
+  then
+    exit 0
+  fi
+
+fi
+
+
+
+cd WORKING_*
+
+su_path=`find . -name su`
+
+if [ "$su_path" == "" ]
+then
+  echo "'su' 二进制文件没有在ROM定制文件夹下找到！"
+  echo "您必须先对您的 ROM 添加 Root 权限！"
+  cd ..
+  exit 0
+fi
+
+cd ..
+
+
+scripts/check_galaxy_sx
+is_gs=$?
+
+device=`scripts/get_build_prop_val ro.product.device`
+
+#
+# Samsung Galaxy S2 or equivalent
+#
+if [ "$is_gs" == "1" ]
+then
+
+  cd WORKING_*
+  test_initd=`grep -c "set_perm.*SYSTEM:etc/init.d" META-INF/com/google/android/update-script`
+  cd ..
+
+  if [ $test_initd != 0 ]
+  then
+    echo "Busybox Run-Parts 功能已经加入！"
+    exit 0
+  fi
+
+  cd WORKING_*
+  if [ ! -d system/etc/init.d ]
+  then
+    echo "没有检测到 /system/etc/init.d 文件夹!"
+    cd ..
+    exit 0
+  fi
+  cd ..
+
+  echo 
+  echo "因为此设备($device)并没有一个真正的 boot.img 和 init.rc 文件，"
+  echo "我们必须替代使用一个支持 busybox run-parts 功能的定制内核(zImage)加入设备。"
+  echo
+  echo "如果您正在使用一个定制的内核，而且它支持 busybox run-parts(/etc/init.d scripts),"
+  echo "那么你现在需要做的的是在刷机脚本update-script中设置适当的权限。"
+  echo "如果您使用的是一个不同的内核，然后只设置权限是没有用的。"
+  echo 
+  echo -n "你是否想设置 /system/etc/init.d 的权限 (y/n)? (默认: y): "
+  read do_runparts
+
+  if [ "$do_runparts" == "n" ]
+  then
+    echo "已经取消"
+    exit 0
+  fi
+
+  scripts/add_initd_perm_to_update_script
+
+else
+  scripts/ensure_boot_extracted
+
+  if [ -d BOOT-EXTRACTED ]
+  then
+    if [ -d WORKING_* ]
+    then
+      echo
+    else
+      exit 0
+    fi
+  else
+    exit 0
+  fi
+
+  if [ -d BOOT-EXTRACTED/boot.img-ramdisk ]
+  then
+    cd BOOT-EXTRACTED/boot.img-ramdisk
+  else
+    echo "错误：BOOT-EXTRACTED/boot.img-ramdisk 文件夹不存在！"
+    exit 0
+  fi
+
+  test_property=`grep -c "on property:cm.filesystem.ready=1" init.rc`
+  test_start=`grep -c "start sysinit" init.rc`
+  test_service=`grep -c "service sysinit" init.rc`
+  test_cm_sysinit=`grep -c "exec /system/bin/sysinit" init.rc`
+
+  if [ "$test_start" != "0" ] && [ "$test_service" != "0" ]
+  then
+    echo "Busybox Run-Parts 已经在 init.rc 中设置!"
+    cd ../..
+    echo
+    echo "正在删除 BOOT-EXTRACTED 文件夹 ..."
+    rm -rf BOOT-EXTRACTED
+    scripts/add_initd_perm_to_update_script
+    exit 0
+
+  elif [ "$test_cm_sysinit" != "0" ]
+  then
+    echo "CyanogenMod sysinit 关于 /etc/init.d 已经在 init.rc 启用！"
+    cd ../..
+    echo
+    echo "正在删除 BOOT-EXTRACTED 文件夹 ..."
+    rm -rf BOOT-EXTRACTED
+    scripts/add_initd_perm_to_update_script
+    exit 0
+
+  else
+
+    cd ../..
+    scripts/add_busybox
+
+    cd WORKING_*
+    #bb_path=`find . -name busybox | grep -m 1 busybox | sed -e 's/\.//g' -e 's/\//\\\\\//g'`
+      
+    cd ..
+    cd BOOT-EXTRACTED/boot.img-ramdisk
+
+
+    if [ `grep -c "start a2sd" init.rc` != 0 ]
+    then
+      echo
+      echo "正在确认 'start sysinit' 是在ramdisk中的 init.rc 里的 ..."
+
+      sed -i -e 's/start a2sd/start sysinit/g' init.rc    
+
+      echo
+      echo "正在确认 'service sysinit' 是在ramdisk中的 init.rc 里的 ..."
+
+      #sed -i -e 's/service a2sd[ ]*\/system\/bin\/logwrapper[ ]*\/system\/bin\/sh[ ]*\/system\/bin\/a2sd/service sysinit \/system\/bin\/logwrapper '"$bb_path"' run-parts \/system\/etc\/init.d/' init.rc
+      sed -i -e 's/service a2sd[ ]*\/system\/bin\/logwrapper[ ]*\/system\/bin\/sh[ ]*\/system\/bin\/a2sd/service sysinit \/system\/bin\/logwrapper \/system\/xbin\/busybox run-parts \/system\/etc\/init.d/' init.rc
+
+    else
+
+      echo
+      echo 正在修改 ramdisk 中的 init.rc ...
+
+      if [ "$test_start" == "0" ] && [ "$test_property" == "0" ]
+      then
+        sed -i -e 's/class_start default/start sysinit\n\n    class_start default/' init.rc
+     
+      elif [ "$test_start" == "0" ] && [ "$test_property" != "0" ]
+      then
+        #
+        # If a2sd was present before
+        #
+        sed -i -e 's/on property:cm.filesystem.ready=1/start sysinit\n    on property:cm.filesystem.ready=1/' init.rc 
+      fi
+
+      if [ "$test_service" == "0" ]
+      then
+        #sed -i -e 's/service media /service sysinit \/system\/bin\/logwrapper '"$bb_path"' run-parts \/system\/etc\/init.d\n    disabled\n    oneshot\n\nservice media /' init.rc
+        sed -i -e 's/service media /service sysinit \/system\/bin\/logwrapper \/system\/xbin\/busybox run-parts \/system\/etc\/init.d\n    disabled\n    oneshot\n\nservice media /' init.rc
+        
+      fi
+
+    fi
+
+    
+    if [ "`grep sysinit init.rc`" == "" ]
+    then
+      echo
+      echo "错误：无法修改 init.rc!"
+    fi
+
+    cd ../..
+    scripts/add_initd_perm_to_update_script
+    scripts/build_boot_img
+
+  fi
+
+  echo
+
+fi

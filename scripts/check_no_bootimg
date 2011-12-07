@@ -1,0 +1,50 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+
+dest_dir=$1
+kitchen_dir=`pwd`
+
+if [ "$dest_dir" == "" ]
+then
+  cd WORKING_*
+  dest_dir=`pwd`
+else
+  cd $dest_dir
+fi
+
+if [ ! -e boot.img ]
+then
+
+  echo
+  echo  "警告: 无法发现一个有效 boot.img ，你可以选择添加一个虚拟的 boot.img"
+  echo  "     使ROM定制工具能够正常工作。"
+  echo 
+  echo  "     这个虚拟 boot.img 在 ROM 建立时将会自动删除。"
+  echo 
+  echo -n \
+        "是否添加虚拟 boot.img (y/n)? (默认: y): "
+
+  read add_it
+  echo
+
+  if [ "$add_it" != "n" ]
+  then
+    echo "正在复制虚拟的 boot.img ..."
+    cp $kitchen_dir/tools/nullBoot.img $dest_dir/boot.img
+  else
+    echo "已取消"
+  fi
+
+  cd $kitchen_dir
+  echo
+fi

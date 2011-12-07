@@ -1,0 +1,92 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+ 
+temp=`ls WORKING_* 2>/dev/null`
+res=$?
+
+if [ "$res" == "2" ]
+then
+  echo "没有找到ROM定制文件夹！"
+  exit 0
+else
+  cd WORKING_*
+fi
+
+if [ ! -d META-INF/com/google/android ]
+then
+  echo "No META-INF/com/google/android folder found, creating it."
+  mkdir -p META-INF/com/google/android
+  echo
+fi
+
+cd META-INF/com/google/android
+
+
+if [ -e update-script ]
+then
+  echo "已经找到 update-script 刷机脚本"
+  cd ../../../../.. 
+
+else  
+
+  if [ -e updater-script ]
+  then
+
+    cd ../../../../..
+
+    echo
+    echo "======================================================="
+    echo
+    echo "已找到一个 updater-script 脚本而非 update-script 脚本。"
+    echo "由于ROM定制工具脚本存在兼容性，只有 update-script 脚本可以"
+    echo "在ROM定制工具中使用。（查看ROM定制工具在论坛中的FAQ常见解释）"
+    echo
+    echo "选择一个操作选项号码:"
+    echo 
+    echo "  1 = 转换 updater-script 脚本为 update-script (推荐)"
+    echo "  2 = 什么都不做，保持 updater-script 刷机脚本"
+    echo
+    echo "- 选项 #1 会将 updater-script（Edify）刷机脚本转换为"
+    echo "  update-script（Amend）刷机脚本。注意: 在 ROM 建立后"
+    echo "  将会把脚本改变回 Edify 格式。"
+    echo
+    echo "- 选项 #2 将不会进行任何操作吗，适用于不使用此定制工具"
+    echo "  制作 ROM 或转换成 update-script 刷机脚本后再操作。"
+    echo
+    echo -n "? (默认=1) "
+
+    read enter_option
+    if [ "$enter_option" != "2" ]
+    then
+      scripts/convert_updater_script no_help
+      scripts/fix_update_script
+    else
+      echo
+      echo "警告: 并ROM定制工具不使用 update-script 刷机脚本将出现问题！"
+      exit 1
+    fi
+
+  else
+
+    cd ../../../../..
+
+    echo "无法找到 update-script 刷机脚本，正在创建一个 ..."
+    cd WORKING_*
+    cp ../tools/update_files/update-script META-INF/com/google/android/
+    cd ..
+    scripts/fix_update_script
+    scripts/fix_update_script_with_features
+
+  fi
+fi
+

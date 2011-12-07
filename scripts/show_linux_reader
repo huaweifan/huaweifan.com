@@ -1,0 +1,70 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+
+img_dir=$1
+img_file=$2
+
+dos_path=`cygpath -wp $img_dir`
+
+echo 
+echo "#####################################################################"
+echo 
+echo " 从 $img_file 解压缩文件前，阅读下面的说明："
+echo 
+echo " 1) 确保您已经安装 DiskInternals Linux 阅读器， 寻找"
+echo "    tools/diskinternals_windows/Linux_Reader.exe"
+echo 
+echo " 2) 运行 Linux Reader 并使用 'Drives->Mount Image' 挂载："
+echo "    $dos_path\\$img_file"
+echo
+echo " 3) 从 Linux Reader 资源管理器中，双击“Linux native Volume 1”，
+echo "    使 image 文件夹现在显示出来。"
+echo
+
+if [ "$img_file" == "ext4_cache.img" ]
+then
+  echo " 4) 打开“recovery”文件夹，使 sec_csc.zip 显示"
+  echo
+  echo " 5) 右键 sec_csc.zip, 选择“保存”，然后点击“下一步”。"
+  echo
+  echo " 6) 取消选中“保存目录结构”的框，然后选择文件夹 $dos_path。"
+  echo "    "
+
+else
+  echo " 4) 右键单击这些文件夹，并选择“全选”"
+  echo 
+  echo " 5) 再次右击并选择“保存”。点击“下一步”。"
+  echo
+  echo " 6) “保存目录结构”检查框，然后选择文件夹 $dos_path"
+  echo "    "
+fi
+
+echo
+echo "    注：该计划将显示最近使用的路径，如果你不改变的文件夹。"
+echo "       从而确保不使用旧的工作文件夹！"
+echo
+echo " 7) 点击“下一步”两次，等待解压完成，然后关闭 Linux Reader"
+echo      
+echo "    注：此方案增加了管理员解压文件的所有权，所以ROM定制工具移动或删除您的ROM"
+echo "       定制文件夹之后可能有问题，（除非你使用Windows资源管理器手动操作）！"
+echo      
+echo "#####################################################################"
+echo
+
+echo 
+echo " - > 执行完上述步骤，然后按ENTER键！ < -"
+echo
+
+scripts/press_enter
+
+

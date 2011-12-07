@@ -1,0 +1,335 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+#
+# This script has two optional arguments:
+#
+# $1 = "no_create" or "create" or "create_working 
+#         - must specify no_create if working folder already exists
+# $2 = "kernel_only" or "name_given" - if this is specified then $1 is mandatory
+#
+
+if [ "$1" == "no_create" ] 
+then
+  build_dir=`ls | grep -m 1 ^WORKING_`
+
+  mkdir $build_dir/system
+  mv $build_dir/system.img $build_dir/system
+
+  if [ -e $build_dir/lib.img ]
+  then
+    mkdir -p $build_dir/system/lib
+    mv $build_dir/lib.img $build_dir/system/lib
+  fi
+
+else
+
+  current_dir=`pwd`
+  dest_dir=$current_dir/original_update
+  scripts/check_no_bootimg $dest_dir
+
+  #
+  # Check for system.img/boot.img/lib.img in original_update  
+  #
+  if [ -e original_update/system.img ]
+  then
+    echo "已经找到 original_update/system.img"
+    if [ -e original_update/boot.img ]
+    then
+      echo "已经找到 original_update/boot.img"
+    else
+      echo "错误：没有找到 original_update/boot.img ！"
+      echo
+      exit 1
+    fi
+
+    if [ -e original_update/lib.img ]
+    then
+      echo "已经找到 original_update/lib.img"
+    fi
+
+  else
+
+    if [ -e original_update/boot.img ]
+    then
+      echo "已经找到 original_update/boot.img"
+      echo "错误：没有找到 original_update/system.img ！"
+    else
+      echo
+      echo "错误：在 original_update 文件夹里没有找到 ROM 文件！"
+    fi
+
+    exit 1
+  fi
+
+
+  #
+  # Working folder name
+  #
+  build_dir=`scripts/set_working_folder_name $2`
+
+  echo
+  echo "正在建立工作文件夹 $build_dir ..."
+  mkdir $build_dir
+  mkdir $build_dir/system
+
+  echo "正在复制 boot.img ..."
+  cp original_update/boot.img $build_dir
+  echo "正在复制 system.img ..."
+  cp original_update/system.img $build_dir/system
+
+  if [ -e original_update/lib.img ]
+  then
+    echo "正在复制 lib.img ..."
+    mkdir -p $build_dir/system/lib
+    cp original_update/lib.img $build_dir/system/lib
+  fi
+
+fi
+
+
+#
+# Directory tree
+#
+
+mkdir -p $build_dir/META-INF/com/google/android
+echo
+echo "正在添加 update-script 刷机脚本 ..."
+cp tools/update_files/update-script $build_dir/META-INF/com/google/android/
+
+
+
+#
+# Check for YAFFS/EXT*
+#
+
+system_dir=$build_dir/system
+
+scripts/check_if_img_yaffs $system_dir system.img
+
+is_yaffs=$?
+
+if [ "$is_yaffs" == "1" ]
+then
+
+  if [ `uname | grep CYGWIN` ]
+  then
+    unyaffs_file=unyaffs.exe
+  else
+    unyaffs_file=unyaffs
+  fi
+    
+  scripts/compile_unyaffs
+  if [ "$?" == "1" ]
+  then
+    exit 0
+  fi
+
+  echo
+  echo 正在解压 system.img 的内容 ...
+  cd $system_dir
+  result=`../../tools/unyaffs_files/$unyaffs_file system.img 2>/dev/null`
+
+else
+
+  echo
+  echo "在 ROM 中已存在 NON-YAFFS 文件格式"
+  echo
+
+  cd $system_dir
+
+  # Get full path
+  system_dir=`pwd`
+
+  cd ../..
+  scripts/extract_ext3_img $system_dir system.img
+  cd $system_dir
+
+fi
+
+
+check_dump=`ls unyaffs*stackdump* 2>/dev/null`
+rm -f system.img 2>/dev/null
+
+if [ "$?" == "1" ]
+then
+  echo
+  echo "警告: system.img 正在使用中，请在应用程序关闭后手动删除文件。"
+  echo
+fi
+
+
+cd ..
+
+if [ "$check_dump" != "" ]
+then
+  echo
+  echo "错误: /system 文件夹中发现的 Stackdump 文件与 unyaffs 不兼容。"
+  echo
+  exit 1
+fi
+
+if [ ! -d system ]
+then
+  echo
+  echo "错误：没有找到 /system 文件夹！"
+  exit 1
+fi
+
+if [ ! -d system/framework ]
+then
+  echo
+  echo "错误：没有找到 /system/framework 文件夹！"
+  exit 1
+fi
+
+if [ ! -d system/app ]
+then
+  echo
+  echo "错误：没有找到 /system/app 文件夹！"
+  exit 1
+fi
+
+if [ "`ls system`" == "" ]
+then
+  echo 
+  echo "错误： /system 文件夹是空白的！"
+  echo
+  exit 1
+fi
+
+
+
+#
+# Extract the contents of lib.img, which will go under /system/lib
+#
+
+if [ -e system/lib/lib.img ]
+then
+
+  echo 
+  echo "已经找到 /system/lib 内容的 lib.img ..."
+
+  cd ..
+
+  if [ `uname | grep CYGWIN` ]
+  then
+    scripts/press_enter
+  fi
+
+  scripts/extract_ext3_img $system_dir/lib lib.img
+  
+  rm -f $system_dir/lib/lib.img 2>/dev/null
+
+  if [ "$?" == "1" ]
+  then
+    echo
+    echo "警告: lib.img 正在使用中，请在应用程序关闭后手动删除文件。"
+    echo
+  fi
+
+  #
+  # Check for empty /system/lib folder
+  #
+  lib_files=`ls $system_dir/lib`
+  if [ "$lib_files" == "lib.img" ] || [ "$lib_files" == "" ]
+  then
+    echo
+    echo "错误：没有文件解压自 lib.img"
+    exit 1
+  fi
+
+else
+  cd ..
+  echo
+fi
+
+
+
+cd WORKING_*
+
+if [ ! -e boot.img ]
+then
+	cd ..
+  scripts/check_no_bootimg
+
+else
+
+	cd ..
+
+	#
+	# Check for location of Android header in boot.img so that it can be
+	# added to working folder correctly
+	#
+
+	scripts/check_bootimg_header
+
+	# Not a valid boot.img
+	if [ "$?" == "1" ]
+	then
+
+		scripts/check_galaxy_s
+		is_gs=$?
+
+		if [ "$is_gs" == "1" ]
+		then
+		  cp_file=redbend_ua
+		else
+		  scripts/check_galaxy_s2
+		  is_gs2=$?
+
+		  if [ "$is_gs2" == "1" ]
+		  then
+		    cp_file=flash_image
+		  fi
+		fi
+
+		if [ "$is_gs" == "1" ] || [ "$is_gs2" == "1" ]
+		then
+		  echo
+		  echo "注意: 此 boot.img 实际上可能是一个内核(zImage)代替，将会"
+		  echo "     重命名为 zImage."
+		  echo
+
+		  cd WORKING_*
+		  mv -v boot.img zImage
+		  echo
+		  cp -v ../tools/samsung_files/$cp_file .
+		  echo flash_zimage >> META-INF/com/google/android/update-script
+		  cd ..
+		  scripts/check_no_bootimg 
+		fi
+	fi
+fi
+
+
+# Wi-fi fix - required for some Huawei devices
+scripts/fix_huawei_wifi
+
+
+if [ "$2" != "kernel_only" ] && [ "$2" != "name_given" ]
+then
+  scripts/fix_update_script 
+
+  # Modify the update-script with features found in Nandroid backup
+  scripts/fix_update_script_with_features
+
+  scripts/remove_recovery
+fi
+
+echo $build_dir 列表:
+echo
+ls -l $build_dir
+
+echo
+echo "ROM定制文件夹创建已经完成！"
+

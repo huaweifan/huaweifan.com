@@ -1,0 +1,91 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+#
+# This script has two optional parameters:
+#
+# $1 = folder where the image is located
+# $2 = image name (e.g. data.img or system.img) - required if $1 defined
+#
+# If not specified, then script assumes system.img in working folder
+#
+
+base_dir=`pwd`
+
+if [ "$1" == "" ]
+then
+  cd WORKING_*
+
+  if [ ! -e system/system.img ]
+  then
+    echo "错误: 没有在ROM定制文件夹中发现 system.img ！"
+    cd ..
+    exit 1
+  fi
+
+  cd system
+
+  image_file=system.img 
+
+else
+
+  if [ "$2" == "" ]
+  then
+    echo "错误: 没有指定 Image 镜像文件！"
+    exit 1
+  fi
+
+  cd $1
+  image_file=$2
+  
+fi
+
+#
+# Check for chunk size and then calculate spare size
+#
+
+hex_chunk=`od -x -A x $image_file | grep -m 1 "1000 [ ]*0000 [ ]*0001 [ ]*0000 [ ]*0000 [ ]*0000 [ ]*ffff [ ]*0000" | sed -e 's/ .*//'`
+
+cd $base_dir
+
+if [ "$hex_chunk" != "" ]
+then
+  dec_chunk=`printf "%d" 0x$hex_chunk`
+  echo " $image_file 文件中的模块大小为 $dec_chunk "
+
+  # Spare size
+  dec_spare=$(($dec_chunk/32))
+  echo "计算出备用大小为 $dec_spare 字节"
+
+  str=`sed '20q;d' tools/unyaffs_files/unyaffs.c`
+  if [ "$str" != "#define CHUNK_SIZE $dec_chunk" ]
+  then
+    echo "正在设置 unyaffs.c 中模块大小 = $dec_chunk ，行 20"
+    sed -i -e '20s/.*/#define CHUNK_SIZE '$dec_chunk'/' tools/unyaffs_files/unyaffs.c
+  fi
+
+  str=`sed '21q;d' tools/unyaffs_files/unyaffs.c`
+  if [ "$str" != "#define SPARE_SIZE $dec_spare" ]
+  then
+    echo "正在设置 unyaffs.c 中备用大小 = $dec_spare ，行 21"
+    sed -i -e '21s/.*/#define SPARE_SIZE '$dec_spare'/' tools/unyaffs_files/unyaffs.c
+  fi
+
+  exit 0
+
+else
+  echo "错误: 无法在 $image_file 中检测备份大小！"
+  cd ../..
+  exit 1
+fi
+
+

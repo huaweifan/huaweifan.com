@@ -1,0 +1,56 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+
+chmod 755 tools/extract_boot_files/extract-*.pl
+chmod 755 tools/mkboot/*
+chmod 755 tools/unyaffs_files/*
+chmod 755 tools/zipalign_files/*
+chmod 755 tools/samsung_files/unpack-initramfs
+rm -f symlinks.log
+rm -f tools/explore2fs_windows/explore*.txt
+rm -f tools/ext2read_windows/ext2*.log
+rm -f ext2*.log
+rm -f sh.exe.stackdump
+
+bin_list=( mkbootfs mkbootfs.exe mkbootimg mkbootimg.exe )
+
+for mkboot_bin in ${bin_list[@]}
+do
+  if [ -e tools/mkboot/$mkboot_bin ]
+  then
+    rm tools/mkboot/$mkboot_bin
+  fi
+done
+
+
+bin_list=( unyaffs unyaffs.exe )
+
+for unyaffs_bin in ${bin_list[@]}
+do
+  if [ -e tools/unyaffs_files/$unyaffs_bin ]
+  then
+    rm tools/unyaffs_files/$unyaffs_bin
+  fi
+done
+
+
+bin_list=( simg2img simg2img.exe )
+
+for simg_bin in ${bin_list[@]}
+do
+  if [ -e tools/samsung_files/simg2img_files/$simg_bin ]
+  then
+    rm tools/samsung_files/simg2img_files/$simg_bin
+  fi
+done
+

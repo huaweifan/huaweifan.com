@@ -1,0 +1,61 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+
+cd WORKING_*
+
+if [ -d system/etc/init.d ]
+then
+
+  echo
+  echo "正在检查刷机脚本 update-script 是否需要更新 /system/etc/init.d ..."
+
+  cd META-INF/com/google/android
+
+  if [ -e update-script ]
+  then
+
+    if [ `grep -c "set_perm_recursive .*SYSTEM:etc/init.d$" update-script` == 0 ]
+    then
+
+      echo "update-script 刷机脚本已经修改过了"
+
+      # Look for line with set_perm_recursive of SYSTEM:
+      grep_perm=`grep set_perm_recursive update-script | grep -m 1 "SYSTEM:[ ]*$"`
+      
+      if [ "$grep_perm" == "" ]
+      then
+        sed -i -e 's/copy_dir PACKAGE:system SYSTEM:/copy_dir PACKAGE:system SYSTEM:\nset_perm_recursive 0 0 0777 0777 SYSTEM:etc\/init.d/g' update-script
+      else
+        sed -i -e 's/\(set_perm_recursive[ ]*[^\ ]*[ ]*[^\ ]*[ ]*[^\ ]*[ ]*[^\ ]*[ ]*SYSTEM:[ ]*$\)/\1\nset_perm_recursive 0 0 0777 0777 SYSTEM:etc\/init.d/g' update-script
+      fi 
+
+      if [ `grep -c "set_perm_recursive .*SYSTEM:etc/init.d$" update-script` == 0 ]
+      then
+        echo "错误：在 update-script 中无法找到需要添加的代码！"
+      fi
+
+    else
+      echo "update-script 已经有设置 init.d 文件夹的权限"
+    fi
+
+  else
+    echo "错误：没有找到 update-script 刷机脚本！"
+  fi
+
+  cd ../../../..
+
+fi
+
+cd ..
+scripts/fix_update_script_blanks
+

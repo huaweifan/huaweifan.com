@@ -1,0 +1,110 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+clear
+
+echo
+echo "此过程将从提供的 ROM 中解压 kernel（内核） 和 modules（模块）。"
+echo 
+echo "注意1: 开始前将会删除 MY_KERNEL 文件夹中的任何文件。"
+echo 
+echo "注意2: 如果工作文件夹不存在，它将会备份并在内核解压后还原。"
+echo
+echo "获得新 ROM ，并且准备将它复制到 original_update 文件夹。"
+
+scripts/press_enter
+
+if [ -d WORKINGTEMP ]
+then
+  rm -rf WORKINGTEMP
+fi
+
+if [ -d WORKING_* ]
+then
+  mkdir WORKINGTEMP
+  mv WORKING_* WORKINGTEMP 2>/dev/null
+
+  if [ "$?" == "1" ]
+  then
+    echo "错误: ROM定制文件夹在使用中。请确认其中文件或文件夹没有打开。"
+    rm -rf WORKINGTEMP
+    exit 0
+  fi
+
+fi
+
+scripts/extract_kernel_and_modules
+
+if [ -d MY_KERNEL ]
+then
+
+  if [ -d MY_DEVICE_WORKING/system ]
+  then
+
+    if [ `ls MY_DEVICE_WORKING/system | grep -m 1 prop` ]
+    then
+
+      echo
+      echo "正在复制 *.prop ..."
+  
+      if [ ! -d MY_KERNEL/system ]
+      then
+        mkdir MY_KERNEL/system
+      fi
+
+      cp -v MY_DEVICE_WORKING/system/*.prop MY_KERNEL/system/
+    fi
+
+  fi
+
+
+  rm MY_KERNEL/boot.img
+
+  echo
+  echo "----------------------------------------------------------------------"
+  echo
+  echo "以下文件/文件夹复制到 MY_KERNEL 文件夹:"
+  echo
+  ls MY_KERNEL
+
+  if [ -d MY_KERNEL/system ]
+  then
+    echo 
+    echo "在 /system 文件夹中:"
+    ls MY_KERNEL/system
+  fi
+
+  echo
+  echo "----------------------------------------------------------------------"
+  echo
+  echo "您可以添加定制工具解压工作目录中 boot.img "
+  echo "所得到的 zImage 到 BOOT-EXTRACTED 文件夹。"
+  echo
+
+else
+  echo "错误: Kernel 没有解压！"
+fi
+
+if [ -d MY_DEVICE_WORKING ]
+then
+  echo "正在删除这个 ROM 的ROM定制文件夹 ..."
+  rm -rf MY_DEVICE_WORKING
+fi
+
+if [ -d WORKINGTEMP ]
+then
+  working_folder=`ls WORKINGTEMP`
+  echo "正在恢复之前的工作文件夹 $working_folder ..."
+  mv WORKINGTEMP/* .
+  rmdir WORKINGTEMP
+fi
+

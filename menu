@@ -1,0 +1,122 @@
+#!/bin/bash
+
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+version=0.180
+
+
+if [ ! -e menu ]
+then
+  echo
+  echo "确保你是从它被安装在同一文件夹中运行这个文件，否则厨房运行脚本时会出问题。"
+  echo "用 ./menu 命令运行Android 厨房工具，不要尝试其他任何命令或方法！"
+  exit 0
+fi
+
+dir_list=( original_update scripts tools )
+error_found=0
+
+for check_dir in ${dir_list[@]}
+do
+  if [ ! -e $check_dir ]
+  then
+    echo "错误：文件夹 '$check_dir' 没有找到"
+    error_found=1
+  fi
+done
+
+if [ $error_found == 1 ]
+then
+  echo
+  echo "请确定你已经正确安装了定制工具文件夹。"
+  exit 0
+fi
+
+
+chmod 755 scripts/*
+scripts/check_install_dir
+
+if [ "$?" == "1" ]
+then
+  exit 0
+fi
+
+scripts/init_kitchen
+scripts/check_binaries
+
+if [ "$?" == "1" ]
+then
+  exit 0
+fi
+
+
+while :
+do
+
+  clear
+
+  echo 
+  echo "============================================================"
+  echo " Android ROM定制工具 $version - by dsixda (华为饭网 饭吗翻译)"
+  echo "============================================================"
+  echo
+  echo "  1 - 解包 ROM 到定制文件夹"
+  echo "  2 - 添加 root 权限"
+  echo "  3 - 添加 BusyBox 指令集"
+  echo "  4 - 禁用 开机画面声音"
+  echo "  5 - 添加 无线共享功能"
+  echo "  6 - Zipalign 所有的*. apk文件，以优化内存RAM的使用"
+  echo "  7 - 更改 擦除（Wipe） ROM 的状态"
+  echo "  8 - 更改 ROM 显示名称"
+  echo "  9 - 检查 update-script 刷机脚本是否有错误"
+  echo " 10 - 显示 定制文件夹的信息"
+  echo 
+  echo "  0 - 高级选项"
+  echo " 99 - 打包 定制文件夹 完成ROM的定制"
+  echo
+  echo "  u - 升级/关于ROM定制工具"
+  echo "  x - 退出"
+  echo 
+  echo -n "输入选项："
+  read opt
+
+  if [ "$opt" != "x" ] && [ "$opt" != "u" ] && [ "$opt" != "1" ]
+  then
+    scripts/check_multiple_working
+  fi
+  
+  if [ "$?" != "1" ]
+  then
+    case $opt in
+      1) clear; scripts/check_rom; continue;;
+      2) scripts/do_root; continue;;
+      3) scripts/add_busybox show_help;;
+      4) scripts/disable_sounds;;
+      5) scripts/add_tether;;
+      6) scripts/do_zipalign;;
+      7) scripts/change_wipe;;
+      8) scripts/change_rom_name;;
+      9) scripts/verify_update_script; continue;;
+      10) scripts/show_rom_info;;
+      0) scripts/menu_advanced $version; continue;;
+      99) scripts/build_rom;;
+      u) scripts/about $version; continue;;
+      x) scripts/init_kitchen; clear; echo; echo "再见，欢迎有空常来华为手机论坛来玩（bbs.huaweifan.com）。"; echo; exit 1;;
+      *) echo "无效的选项"; continue;;
+    esac
+  fi
+
+  scripts/press_enter
+
+done
+

@@ -1,0 +1,107 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+#
+# This script has two arguments:
+#
+# $1 = file name (mandatory)
+# $2 = "kernel_only" or "name_given" (optional)
+#
+
+
+update_file=$1
+ 
+echo "已选择 $update_file"
+
+# Trim spaces in file name
+update_file2=`echo $update_file | tr ' ' '_'`
+
+if [ "$update_file" != "$update_file2" ]
+then
+  echo "正在重命名为 $update_file2"
+  mv "original_update/$update_file" original_update/$update_file2
+  update_file=$update_file2
+fi
+
+#
+# Working folder name
+#
+build_dir=`scripts/set_working_folder_name $2` 
+
+
+#
+# Creating folder structure
+#
+
+echo
+echo "正在创建ROM定制文件夹 $build_dir ..."
+mkdir $build_dir
+
+echo
+echo "正在解包 ROM ..."
+
+tar xvf original_update/$update_file -C $build_dir -x factoryfs.img cache.img modem.bin zImage factoryfs.rfs cache.rfs PDA.tar.md5 CSC.tar.md5 PHONE.tar.md5 PDA.tar CSC.tar PHONE.tar 2>/dev/null
+
+cd $build_dir
+
+echo
+
+if [ -e factoryfs.img ]
+then
+
+  if [ -e zImage ]
+  then
+    cd ..
+    scripts/show_rooted_kernel_msg
+    cd $build_dir
+  fi
+
+  cd ..
+  scripts/simg_files_to_working_folder no_create $2
+  exit $?
+
+elif [ -e factoryfs.rfs ]
+then
+
+  if [ -e zImage ]
+  then
+    cd ..
+    scripts/show_rooted_kernel_msg
+    cd $build_dir
+  fi
+
+  cd ..
+  scripts/rfs_files_to_working_folder no_create $2
+  exit $?
+
+elif [ -e PDA.tar ]
+then
+
+  cd ..
+  scripts/sgs_tar_files_to_working_folder no_create $2
+  exit $?
+
+elif [ -e PDA.tar.md5 ]
+then
+
+  cd ..
+  scripts/sgs_tarmd5_files_to_working_folder no_create $2
+  exit $?
+
+else
+  echo "错误：TAR存档中没有 image 文件！"
+  echo 
+  cd ..
+  exit 1
+fi
+
+

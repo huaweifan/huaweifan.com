@@ -1,0 +1,79 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+echo
+
+if [ -d BOOT-EXTRACTED ]
+then
+  echo 已经找到 BOOT-EXTRACTED 文件夹，正在检查相关内容 ...
+
+  if [ -d BOOT-EXTRACTED/boot.img-ramdisk ]
+  then
+    echo 已经找到 boot.img-ramdisk
+
+    if [ -e BOOT-EXTRACTED/zImage ]
+    then
+      echo 已经找到 zImage
+    else
+      echo 没有找到 BOOT-EXTRACTED/zImage
+      exit 0
+    fi
+
+  else
+    echo 没有找到 BOOT-EXTRACTED/boot.img-ramdisk 文件夹！
+    exit 0
+  fi
+
+else
+  echo 没有找到 BOOT-EXTRACTED 文件夹！
+  exit 0
+fi
+
+
+if [ -d WORKING_* ]
+then
+  echo 已经找到ROM定制文件夹！
+else
+  echo 没有找到ROM定制文件夹！
+  exit 0
+fi
+
+
+echo 
+echo "正在创建 initrd.gz ..."
+
+cd BOOT-EXTRACTED/boot.img-ramdisk
+find . | cpio -o -H newc | gzip > ../initrd.gz
+cd ..
+rm -rf boot.img-ramdisk
+
+cd ..
+cd WORKING_*
+
+if [ -e boot.img ]
+  then
+  echo
+  echo "正在从ROM定制文件夹替换 boot.img 到 NAND 引导文件夹 ..."
+  rm -f boot.img
+fi
+
+if [ -d boot ]
+then
+  echo
+  echo "正在删除旧的 NAND 引导文件夹 ..."
+  rm -rf boot
+fi
+
+mv ../BOOT-EXTRACTED boot
+cd ..
+
+

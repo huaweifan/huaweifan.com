@@ -1,0 +1,54 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+#
+# This script has two optional parameters:
+#
+# $1 = folder where the image is located
+# $2 = image name (e.g. data.img or system.img)
+#
+# If not specified, then script assumes system.img in working folder
+#
+
+if [ `uname | grep CYGWIN` ]
+then
+  unyaffs_file=unyaffs.exe
+else
+  unyaffs_file=unyaffs
+fi
+  
+if [ -e tools/unyaffs_files/$unyaffs_file ]
+then
+  rm -f tools/unyaffs_files/$unyaffs_file
+fi
+
+scripts/check_yaffs_sizes $1 $2
+
+if [ "$?" == "1" ]
+then
+  exit 1
+fi
+
+echo "正在复制 unyaffs ..."
+cd tools/unyaffs_files
+gcc -o unyaffs unyaffs.c
+cd ../..
+
+if [ -e tools/unyaffs_files/$unyaffs_file ]
+then
+  echo unyaffs 已经编译成功
+else
+  echo "错误: unyaffs 没有编译成功！"
+  exit 1
+fi
+
+exit 0

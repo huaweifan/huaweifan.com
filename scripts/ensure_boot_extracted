@@ -1,0 +1,113 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+#
+# This script has one optional parameter:
+#
+# $1 = if set to 'no_clear' then it won't clear at start
+#
+
+if [ "$1" == "" ]
+then
+  clear
+fi
+
+scripts/prompt_remove_boot_extracted
+
+if [ ! -d BOOT-EXTRACTED ]
+then
+
+  if [ -d WORKING_* ]
+  then
+    echo
+    echo 已经找到ROM定制文件夹
+  else
+    echo
+    echo 没有找到ROM定制文件夹，你需要创建一个！
+    exit 0
+  fi
+
+  cd WORKING_*
+
+  if [ -d system ]
+  then
+
+    if [ -e boot.img ]
+    then
+
+      cd ..
+      scripts/check_bootimg_header
+      scripts/check_kernel_offset
+      res=$?
+
+      if [ "$res" == "0" ]
+      then
+        kernel_file=extract-kernel.pl
+        ramdisk_file=extract-ramdisk.pl
+      else
+        exit 0
+      fi
+
+      echo 正在创建文件夹 'BOOT-EXTRACTED' ...
+      cd WORKING_*
+      mkdir ../BOOT-EXTRACTED
+      cp boot.img ../BOOT-EXTRACTED/
+      
+      cd ..
+      cp tools/extract_boot_files/$kernel_file BOOT-EXTRACTED/extract-kernel.pl
+      cp tools/extract_boot_files/$ramdisk_file BOOT-EXTRACTED/extract-ramdisk.pl
+      cd BOOT-EXTRACTED
+
+      echo
+      echo 正在解压内核文件 kernel ...
+      ./extract-kernel.pl boot.img 2>/dev/null
+     
+      if [ ! -e zImage ]
+      then
+        echo "错误：没有找到 zImage ！"
+      fi
+
+      echo Extracting ramdisk ... 
+      ./extract-ramdisk.pl boot.img 2>/dev/null
+
+      if [ ! -d boot.img-ramdisk ]
+      then
+        echo "错误：没有找到 ramdisk 文件夹！"
+      fi
+
+      rm boot.img
+      rm extract-*.pl
+      cd ..
+      echo
+
+    else
+
+      if [ -e boot/initrd.gz ] && [ -e boot/zImage ]
+      then
+        cd ..
+        scripts/ensure_nand_extracted $1
+
+      else
+        echo "错误：没有找到 boot.img ！"
+        echo
+        cd ..
+        exit 0
+      fi
+    fi      
+  
+  else
+    echo "错误: ROM定制文件夹中没有找到系统文件夹 system ！"
+    cd ..
+    exit 0
+  fi
+fi
+

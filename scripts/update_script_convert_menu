@@ -1,0 +1,65 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+
+clear
+if [ ! -d WORKING_* ]
+then
+  echo No working folder found!
+  scripts/press_enter
+  exit 0
+fi
+
+
+while :
+do
+
+  clear
+
+  echo
+  echo "转换 update-script/updater-script"
+  echo "--------------------------------------"
+  echo
+  echo "说明："
+  echo "- 刷机脚本 update-script 是 “Amend“ 格式"
+  echo "- 刷机脚本 updater-script 是 ”Edify” f格式"
+  echo
+  echo
+  echo "输入选择："
+  echo 
+
+  echo "  1 = 转换 updater-script 为 update-script (Amend)"
+  echo "  2 = 转换 update-script 为 updater-script (Edify)"
+  echo "  0 = 退出"
+  echo
+  echo -n "? "
+
+  read enterNumber
+
+  if [ "$enterNumber" == "1" ]
+  then
+    scripts/convert_updater_script
+  elif [ "$enterNumber" == "2" ] 
+  then
+    scripts/convert_update_script
+  elif [ "$enterNumber" == "0" ]
+  then
+    exit 0
+  else 
+    echo "无效的选项"
+    continue
+  fi
+
+  scripts/press_enter
+  exit 0
+
+done

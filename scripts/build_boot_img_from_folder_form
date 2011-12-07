@@ -1,0 +1,61 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+
+
+scripts/prompt_remove_boot_extracted
+mkdir BOOT-EXTRACTED
+
+cd WORKING_*
+cd BOOT
+mv RAMDISK ../../BOOT-EXTRACTED/boot.img-ramdisk
+mv kernel ../../BOOT-EXTRACTED/zImage
+
+base_offset=`cat base | sed -e 's/\(0x[0-9]*\)/\1/g'`
+cmd_line=`cat cmdline | sed -e 's/\(.*\)/\1/g'`
+
+cd ..
+rm -rf BOOT
+mv SYSTEM ../system.temp
+rm -rf *
+mv ../system.temp system
+cd ..
+
+platform=`scripts/get_build_prop_val ro.board.platform`
+
+if [ "$platform" == "qsd8k" ]
+then
+  kernel_offset=2048
+
+elif [ "$platform" == "msm8660" ] || [ "$platform" == "s5pc110" ] || \
+      [ "$platform" == "msm7x30" ]
+then
+  kernel_offset=4096
+
+else
+  echo
+  echo "无法确定内核中的 boot.img 文件（又称页面大小）偏移值。"
+  echo "如果你不打算刷入 boot.img ，那么就使用默认值。"
+  echo
+  echo -n "请输入页面大小（默认值= 4096）："
+  read kernel_offset
+  echo
+
+  if [ "$kernel_offset" == "" ]
+  then
+    kernel_offset=4096
+  fi
+
+fi
+
+scripts/build_boot_img $kernel_offset $base_offset $cmd_line
+

@@ -1,0 +1,73 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+
+if [ "$1" == "" ]
+then
+  clear
+
+elif [ "$1" == "show_help" ]
+then
+
+  clear
+  echo
+  echo "------------------------------------------------------------------"
+  echo  
+  echo "复制你的应用程序到 /data/app 文件夹 (而不是 /system/app)"
+  echo "这样允许您从Android Market更新或卸载您的设备。"
+  echo "在 /data/app 文件夹下的应用程序不需要root也可以卸载删除。"
+  echo 
+  echo "------------------------------------------------------------------"
+  echo
+
+fi
+
+if [ "$1" != "dont_ask" ]
+then
+  echo -n "是否要继续进行添加 /data/app 功能 (y/n)? (默认: y): "
+  read do_app
+
+  if [ "$do_app" == "n" ]
+  then
+    exit 0
+  fi
+fi
+
+echo 
+
+if [ -d WORKING_* ]
+then
+  echo 已经找到ROM定制文件夹
+  cd WORKING_*
+else
+  echo 未找到ROM定制文件夹，你必须先创建一个！
+  exit 0
+fi
+
+if [ -d data/app ]
+then
+  echo /data/app 已经存在
+else
+  echo 正在创建 /data/app
+  mkdir -p data/app
+fi
+
+if [ ! -e data/app/placeholder ]
+then
+  touch data/app/placeholder
+fi
+
+cd ..
+scripts/add_data_app_to_update_script
+
+echo
+echo "/data/app 添加完成"

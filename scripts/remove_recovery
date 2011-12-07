@@ -1,0 +1,120 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+
+cd WORKING_*
+
+if [ -e META-INF/com/google/android/update-script ]
+then
+
+  echo
+  cd META-INF/com/google/android
+
+  #
+  # Remove installation of recovery image
+  #
+  
+  grep_cmd=`grep "copy_dir PACKAGE:recovery SYSTEM:$" update-script`
+
+  if [ "$grep_cmd" != "" ]
+  then
+    echo -n "参考 update-script 脚本移除 Recovery 文件夹(y/n)? (默认: n): "
+    read do_remove
+
+    if [ "$do_remove" == "y" ]
+    then
+      sed -i -e '/copy_dir PACKAGE:recovery SYSTEM:/d' update-script 
+    else
+      echo "没有移除"
+    fi
+  fi
+
+  grep_cmd=`grep "set_perm 0 0 0544 SYSTEM:etc/install-recovery.sh" update-script`
+
+  if [ "$grep_cmd" != "" ]
+  then
+    echo -n "从 update-script 移除 install-recovery.sh (y/n)? (默认: n): "
+    read do_remove
+
+    if [ "$do_remove" == "y" ]
+    then
+      sed -i -e '/set_perm 0 0 0544 SYSTEM:etc\/install-recovery.sh/d' update-script
+    else
+      echo "没有移除"
+    fi
+  fi
+
+
+  cd ../../../../..
+
+  scripts/fix_update_script_blanks
+
+
+else
+  cd ..
+fi  
+
+
+cd WORKING_*
+
+if [ -d recovery ]
+then
+
+  echo -n "是否移除 recovery 文件夹(y/n)? (默认: n): "
+  read do_remove
+
+  if [ "$do_remove" == "y" ]
+  then
+    echo "正在移除 recovery 文件夹 ..."
+    rm -rf recovery
+  else
+    echo "没有移除"
+  fi    
+fi
+
+if [ -e system/etc/install-recovery.sh ]
+then
+
+  echo -n "是否移除 system/etc/install-recovery.sh (y/n)? (默认: n): "
+  read do_remove
+
+  if [ "$do_remove" == "y" ]
+  then
+    echo "正在移除 ..."
+    mv -fv system/etc/install-recovery.sh system/etc/install-recovery.sh.bak 
+    echo
+  else
+    echo "没有移除"
+  fi  
+fi
+
+
+
+if [ -e system/recovery-from-boot.p ]
+then
+
+  echo -n "是否移除 system/recovery-from-boot.p (y/n)? (default: y): "
+  read do_remove
+
+  if [ "$do_remove" != "n" ]
+  then
+    echo "正在移除 ..."
+    mv -fv system/recovery-from-boot.p system/recovery-from-boot.p.bak
+    echo
+  else
+    echo "没有移除"
+  fi  
+fi
+
+echo
+cd ..
+

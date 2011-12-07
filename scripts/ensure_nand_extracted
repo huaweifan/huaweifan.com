@@ -1,0 +1,90 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+#
+# This script has one optional parameter:
+#
+# $1 = if set to 'no_clear' then it won't clear at start
+#
+
+if [ "$1" == "" ]
+then
+  clear
+fi
+
+scripts/prompt_remove_boot_extracted
+
+if [ ! -d BOOT-EXTRACTED ]
+then
+
+  if [ ! -d WORKING_* ]
+  then
+    echo
+    echo "没有找到ROM定制文件夹，你需要创建一个！"
+    exit 0
+  fi
+
+  cd WORKING_*
+
+  if [ -d system ]
+  then
+
+    if [ -d boot ]
+    then
+
+      if [ ! -e boot/initrd.gz ]
+      then
+        echo
+        echo "boot/initrd.gz 没有在ROM定制文件夹中找到！"
+        cd ..
+        exit 0
+      fi
+
+      if [ ! -e boot/zImage ]
+      then  
+        echo
+        echo "boot/zImage 没有在ROM定制文件夹中找到！"
+        cd ..
+        exit 0
+      fi
+
+      echo "正在创建文件夹 'BOOT-EXTRACTED' ..."
+      mkdir ../BOOT-EXTRACTED
+
+      echo "正在复制 initrd.gz 和 zImage 到 BOOT-EXTRACTED ..."
+      cp boot/zImage ../BOOT-EXTRACTED/
+      cp boot/initrd.gz ../BOOT-EXTRACTED
+
+      echo "正在解压 ramdisk 内容 ..."
+      cd ../BOOT-EXTRACTED
+      mkdir boot.img-ramdisk
+      cd boot.img-ramdisk
+      gzip -d -c ../initrd.gz | cpio -i
+      cd ..
+      rm -f initrd.gz
+
+      cd ..
+
+    else
+      echo "错误：没有找到引导文件夹 boot ！"
+      echo
+      cd ..
+      exit 0
+    fi      
+  
+  else
+    echo "错误：ROM定制文件夹中没有找到系统文件夹 system ！"
+    cd ..
+    exit 0
+  fi
+fi
+

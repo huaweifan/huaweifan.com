@@ -1,0 +1,86 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+
+
+nand=false
+
+cd WORKING_*
+if [ -e boot.img ]
+then
+
+  cd ..
+  cmd_line=`scripts/get_cmdline`
+
+  if [ "$cmd_line" == "dsixda NAND" ]
+  then
+    nand=true
+    original_type=boot.img
+  fi
+
+elif [ -d boot ] && [ -e boot/initrd.gz ] && [ -e boot/zImage ]
+then
+  nand=true
+  original_type="boot folder"
+  cd ..
+
+else
+  cd ..
+fi
+
+
+if [ "$nand" == "true" ]
+then
+
+  echo
+  echo "已检测到 NAND ROM (已检查 $original_type)。选择一个选项:"
+  echo
+  echo "  1 = 创建 ROM 和 /boot 文件夹（例如 MAGLDR bootloader）"
+  echo "  2 = 创建 ROM 和 boot.img（例如 cLK bootloader）"
+  echo
+  echo -n "? (默认=1) "
+
+  read enter_option
+  echo
+
+  #
+  # Use /boot folder in ROM
+  #
+  if [ "$enter_option" != "2" ]
+  then
+
+    if [ "$original_type" == "boot.img" ]
+    then
+      echo "正在转换 boot.img 到 boot 文件夹 ..."
+      scripts/ensure_boot_extracted no_clear
+      scripts/build_nand_boot
+    else
+      echo "/boot 文件夹已经存在，不需要更改"
+    fi
+
+  #
+  # Use boot.img in ROM
+  #
+  else
+    echo "正在为刷机转换 boot.img 为适合的 boot.img ..."
+    scripts/ensure_boot_extracted no_clear
+    scripts/build_boot_img_for_nand
+  fi
+
+fi
+
+
+
+
+
+
+

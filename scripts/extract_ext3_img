@@ -1,0 +1,206 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+
+img_dir=$1
+img_file=$2
+
+if [ "$img_dir" == "" ] || [ "$img_file" == "" ] 
+then
+  echo "错误：extract_ext3_img 信息丢失。"
+  echo "语句：extract_ext3_img <file_directory> <img_file_name>"
+  echo
+  exit 1
+fi
+
+img_path=$img_dir/$img_file
+
+if [ ! -e $img_path ]
+then
+  echo "错误：$img_path 没有找到"
+  echo
+  exit 1
+fi
+
+base_dir=`pwd`
+
+if [ `uname | grep CYGWIN` ]
+then
+
+  dos_path=`cygpath -wp $img_dir`
+
+  while :
+  do
+
+    clear
+
+    echo 
+    echo "解包 $img_file"
+    echo "-----------------------"
+    echo 
+    echo "假如 image 使用 EXT 文件系统，请输入一个解包操作选项。你会发现"
+    echo "一个选项好于另一个选项。"
+    echo
+    echo "例如：EXT3: 旧的设备如 HTC Desire HD"
+    echo "     EXT4: 新的设备如 HTC Desire S"
+    echo 
+    echo "  1 - 运行 Explore2fs  (EXT3 推荐)"
+    echo "  2 - 运行 Ext2Explore (EXT3/EXT4 适用)"
+    echo "  3 - 拆包已经完成 / 退出"
+    echo
+    echo
+    echo "注意: 如果上述任何工具解压出现问题，请尝试另一选项。"
+    echo
+    echo -n "请选择数字选项："
+
+    read enterNumber
+
+    if [ "$enterNumber" == "1" ]
+    then
+      scripts/show_explore2fs $img_dir $img_file
+
+    elif [ "$enterNumber" == "2" ]
+    then
+      scripts/show_ext2explore $img_dir $img_file
+    
+    elif [ "$enterNumber" == "3" ]
+    then
+      break
+    
+    else
+      echo "无效选择项"
+    fi
+
+    if [ "$enterNumber" == "1" ] || [ "$enterNumber" == "2" ]
+    then
+      echo
+      echo "--> 如果解压结果满意，请在下一个菜单中选择操作项 3"
+      echo
+
+      scripts/press_enter
+    fi
+
+  done
+
+
+  cd $img_dir
+  rm -f unyaffs*stackdump
+
+  cd $base_dir
+
+
+elif [ `uname | grep Linux` ]
+then
+
+  echo
+  echo "正在挂载 $img_file 到环路设备并解压文件 ..."
+  
+  cd $img_dir
+
+  user_=`whoami`
+  mkdir ../tmp
+
+  # For ext4 (To prevent hanging when unmounting, use: ro,noexec,noload)
+  sudo mount -o loop,ro,noexec,noload $img_file ../tmp 2>/dev/null  
+  res=$?
+
+  if [ "$res" != "0" ]
+  then
+    # For ext3
+    sudo mount -o loop $img_file ../tmp 2>/dev/null
+    res=$?
+  fi
+  
+  if [ "$res" == "0" ]
+  then
+    
+    if [ "$img_file" == "ext4_cache.img" ] || [ "$img_file" == "cache.rfs" ]
+    then
+      sudo cp ../tmp/recovery/sec_csc.zip .
+    else
+      sudo cp -R ../tmp/* .
+    fi
+
+    sudo umount ../tmp
+    rmdir ../tmp
+    sudo chown -R $user_ *
+  else
+    echo "错误: 无法挂载 $img_file"
+  fi
+
+  rm -f unyaffs*stackdump
+
+  cd $base_dir
+
+elif [ `sw_vers | grep -o Mac` ]
+then
+  
+  #
+  # Mac support - with help from he8us
+  #
+
+  res=`which fuse-ext2 2>/dev/null`
+  result=$?
+
+  if [ "$result" == "0" ]
+  then
+
+    cd $img_dir
+
+    echo "保险安装"
+    mv $img_file ../$img_file
+    cd ..
+    mkdir /tmp/for_kitchen/
+
+    echo "正在尝试挂载文件系统 ..."
+    buffer=`fuse-ext2 $img_file /tmp/for_kitchen/`
+    echo "文件系统已经挂载"
+    listing=`ls /tmp/for_kitchen/`
+    echo "文件系统已经列出，正在分析 ..."
+    
+    if [ "$listing" != "" ]
+    then
+
+      echo "正在复制文件 ..."
+
+      if [ "$img_file" == "ext4_cache.img" ]
+      then
+        cp /tmp/for_kitchen/recovery/sec_csc.zip .
+      else
+        cp -R /tmp/for_kitchen/ $img_dir/
+      fi
+
+      umount /tmp/for_kitchen/
+      rmdir /tmp/for_kitchen/
+      mv $img_file $img_dir/$img_file
+      cd system
+
+      rm -f unyaffs*stackdump
+
+      cd $base_dir
+
+    else
+      echo "挂载文件系统失败：挂载点为空"
+      echo $listing
+      rmdir /tmp/for_kitchen/
+      cd $base_dir
+      exit 1
+    fi
+
+  else
+    echo "您的系统没有安装 fuse 。"
+    echo "请在谷歌上搜索 MacFuse 和 fuse-ext2 并安装它们。"
+  fi
+fi
+
+
+

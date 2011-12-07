@@ -1,0 +1,66 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+
+clear
+
+while :
+do
+
+  clear
+
+  echo
+  echo "移植工具 - 仅限高级用户使用！"
+  echo "------------------------------"
+  echo
+  echo "警告：移植选项只处于试验阶段，并只针对高级用户。"
+  echo "     脚本使用的一般规则，用于移植的ROM，"
+  echo "     因此可能需要额外的步骤由用户手动进行妥善移植ROM。"
+  echo
+  echo "     如果你是新ROM开发，那么不使用此选项，"
+  echo "     直到您已经建立了一些基本的（non-ported!）光盘，"
+  echo "     并理解它们是如何工作的！"
+  echo
+  echo "输入选项："
+  echo 
+
+  echo "  a = 从另一设备 移植 ROM "
+  echo "  e = 从另一个ROM中提取内核和模块"
+  echo "  x = 退出"
+  echo
+  echo -n "? "
+
+  read enterLetter
+
+  if [ "$enterLetter" == "a" ]
+  then
+    scripts/port_rom
+    
+    if [ "$?" == "1" ]
+    then
+      continue
+    fi
+
+  elif [ "$enterLetter" == "e" ]
+  then
+    scripts/call_extract_kernel_and_modules
+  elif [ "$enterLetter" == "x" ]
+  then
+    exit 0
+  else 
+    echo "无效的选项"
+    continue
+  fi
+
+  scripts/press_enter
+
+done

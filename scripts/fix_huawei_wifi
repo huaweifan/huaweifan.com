@@ -1,0 +1,47 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+
+cd WORKING_*
+
+if [ -e system/cust/hw/default/wpa_supplicant.conf ] && \
+     [ ! -e /system/etc/wifi/wpa_supplicant.conf ]
+then
+
+  echo
+  cd system
+
+  if [ -d etc ]
+  then
+
+    if [ "`find etc -maxdepth 1 -name wifi -type f`" != "" ] || [ "`find etc -maxdepth 1 -name wifi -type l`" != "" ]
+    then
+      echo "正在移除文件夹 /system/etc/wifi ..."
+      rm -f etc/wifi
+    fi
+
+  else
+    echo "正在创建文件夹 /system/etc ..."
+    mkdir etc 
+  fi
+
+  if [ "`find etc -maxdepth 1 -name wifi -type d`" == "" ]
+  then
+    echo "正在创建文件夹 /system/etc/wifi ..."
+    mkdir etc/wifi
+  fi
+
+  echo "正在复制 /system/cust/hw/default/wpa_supplicant.conf 到 /system/etc/wifi/ ..."
+  cp -f cust/hw/default/wpa_supplicant.conf etc/wifi/
+
+fi
+

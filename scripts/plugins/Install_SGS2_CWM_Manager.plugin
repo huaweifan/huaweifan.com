@@ -1,0 +1,64 @@
+
+echo
+echo "SGS2 ClockworkMod Manager 来自 Chainfire"
+echo "-----------------------------------------"
+echo
+echo "此脚本将会为三星 Galaxy S2 安装 ClockworkMod Manager（CWM 管理工具）"
+echo "应用程序。如果您需要自定义 Recovery 菜单并且使用的不是 CF-Root zImage"
+echo "则此应用程序是必须的（此应用程序将会自动安装）。"
+echo
+echo "注意: 让此应用程序运行仍然需要 自定义/获取 Root 权限的 kernel 内核。"
+echo
+
+echo -n "是否继续 (y/n)? (默认: y): "
+read do_cwm
+echo
+
+if [ "$do_cwm" == "n" ]
+then
+  exit 0
+fi
+
+
+if [ -d WORKING_* ]
+then
+  echo
+  echo 已经找到ROM定制文件夹
+else
+  echo
+  echo 没有找到ROM定制文件夹，您将需要创建一个！
+  exit 0
+fi
+
+
+scripts/check_galaxy_s2
+if [ "$?" != "1" ]
+then
+  echo "错误：ROM 是不兼容"
+  exit 0
+fi
+
+
+cwm_file=CWMManager.apk
+
+cd WORKING_*
+
+res=`find . -name $cwm_file`
+if [ "$res" != "" ]
+then
+  echo "$res 已找到"
+  cd ..
+  exit 0
+fi
+
+cd ..
+scripts/add_data_app dont_ask
+cd WORKING_*
+
+echo
+echo "正在复制 app ..."
+cp -v ../tools/samsung_files/sgs2_cwm/$cwm_file data/app/
+cd ..
+
+echo 
+echo "完成"

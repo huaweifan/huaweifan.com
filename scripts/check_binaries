@@ -1,0 +1,103 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+
+bin_list=( clear gcc java perl sed wget od wc cpio )
+arg_list=( foo dumpversion version v -version V -version -version -version )
+
+show_header=1
+
+for (( i = 0 ; i < ${#bin_list[@]} ; i++ ))
+do
+  
+  if [ $show_header == 1 ]
+  then
+    clear
+    echo
+    echo "欢迎使用 Android ROM（刷机包） 定制工具"
+    echo
+    echo "此工具由DsiXDA开发，由华为饭网的 饭吗 汉化翻译"
+    echo
+    echo "技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com"
+    echo
+    echo -n "请等待 "
+    for (( count = 0 ; $count <= $i ; count++ ))
+    do
+      echo -n "华为饭网：huaweifan.com"
+    done
+
+    show_header=0
+
+  else
+    echo -n "华为饭网：huaweifan.com"
+  fi
+
+  found_error=0
+
+  bin=${bin_list[$i]}
+  argmt=${arg_list[$i]}
+
+  res=`$bin -$argmt 2>/dev/null`
+  result=$?
+
+  if [ "$result" == "127" ]
+  then
+    echo
+    echo
+    echo "错误：此应用程序 $bin 没有安装。没有它本定制工具无法正确运行。"
+    echo "     请到华为手机论坛（http://bbs.huaweifan.com）查阅"
+    echo "     有关本定制工具和安装 $bin 所需二进制文件的疑难问题。"
+    echo 
+
+    found_error=1
+
+  elif [ "$bin" == "sed" ]
+  then
+
+    grep_cmd=`sed --version | grep -m 1 GNU`
+
+    if [ "$grep_cmd" == "" ]
+    then
+      echo
+      echo
+      echo "错误：您没有安装 'sed' 的正确版本。请到华为饭网的"
+      echo "     华为手机论坛（http://bbs.huaweifan.com）"
+      echo "     查阅有关本定制工具的常见问题"
+      echo "     已确认你所安装 sed 的 GNU 版本。"
+      echo
+
+      found_error=1
+
+    fi
+  fi
+
+  if [ $found_error == 1 ]
+  then
+    #echo -n "Ignore and proceed anyway (y/n)? (default: n): "
+    #read proceedCheck
+    proceedCheck=n
+
+    if [ "$proceedCheck" != "y" ] 
+    then
+      exit 1
+    else
+      show_header=1
+    fi
+  fi
+
+done
+
+
+exit 0
+
+
+

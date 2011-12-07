@@ -1,0 +1,57 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+
+img_dir=$1
+img_file=$2
+
+dos_path=`cygpath -wp $img_dir`
+
+echo 
+echo "#####################################################################"
+echo 
+echo " 从 $img_file 解压缩文件前，阅读下面的说明："
+echo 
+echo " 1) 确保你已经安装了MagicISO，发现在："
+echo "    tools/magiciso_windows/Setup_MagicISO.exe"
+echo 
+echo " 2) 运行 MagicISO，选择 'Try It' 和使用 'File->Open Image' 以挂载："
+echo "    $dos_path\\$img_file"
+echo
+echo "    注意：要查看您的文件，键入“*.rfs”在对话框的底部的“File name”框架处"
+echo
+
+if [ "$img_file" == "cache.rfs" ]
+then
+  echo " 3) 在右上角的窗口，打开“recovery”文件夹，使 sec_csc.zip 显示"
+  echo
+  echo " 4) 在sec_csc.zip右键单击，选择“解压”，然后选择文件夹 $dos_path"
+
+else
+  echo " 3) 在右上角窗口中，右键单击文件夹，并选择“全选”"
+  echo 
+  echo " 4) 再次右击，选择“解压”，然后选择文件夹 $dos_path"
+fi
+
+echo
+echo " 5) 等待解压完成，然后关闭 MagicISO"
+echo      
+echo "#####################################################################"
+echo
+
+echo 
+echo " - > 执行完上述步骤，然后按ENTER键！ < -"
+echo
+
+scripts/press_enter
+
+

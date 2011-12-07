@@ -1,0 +1,132 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+#
+# exit 1 = busybox not created
+# exit 0 = busybox is now in working folder
+#
+
+if [ "$1" == "" ]
+then
+  clear
+
+elif [ "$1" == "show_help" ]
+then
+
+  clear
+  echo
+  echo "-----------------------------------------------------------------"
+  echo  
+  echo "BusyBox是一个可执行文件，结合许多共同的UNIX实用工具的微小版本。"
+  echo "一些需要Root权限的应用程序需要它。"
+  echo
+  echo "-----------------------------------------------------------------"
+  echo
+  echo -n "添加 BusyBox (y/n)? (默认: y): "
+  read do_bb
+
+  if [ "$do_bb" == "n" ]
+  then
+    exit 1
+  fi    
+fi
+
+if [ ! -d WORKING_* ]
+then
+  echo 找不到ROM定制文件夹！
+  exit 1
+fi
+
+cd WORKING_*
+
+su_path=`find . -name su`
+
+if [ "$su_path" == "" ]
+then
+  echo "'su'二进制文件没有在ROM定制文件夹下找到！"
+  cd ..
+  exit 1
+else
+  echo
+  echo "已找到 $su_path"
+fi
+
+
+version=`more ../tools/busybox_files/version.txt | sed -e 's/BusyBox \(.*\)$/\1/g'`
+
+if [ -e system/bin/busybox ]
+then
+  echo
+  echo "ROM定制文件夹中已经包含 /system/bin/busybox"
+
+  if [ "$1" == "show_help" ]
+  then
+    echo -n "替换 BusyBox $version (y/n)? (默认: y): "
+    read replace_bin_bb
+    echo
+
+    if [ "$replace_bin_bb" == "n" ]
+    then
+      echo "已取消"
+    else
+      echo "正在更换 /system/bin/busybox"
+      cp -f ../tools/busybox_files/busybox system/bin/
+    fi
+  fi
+
+  cd ..
+  exit 0
+fi
+
+echo
+
+if [ -d system/xbin ]
+then
+  echo 已找到 /system/xbin
+else
+  echo 正在创建 /system/xbin
+  mkdir system/xbin
+fi
+
+echo
+
+if [ -e system/xbin/busybox ] 
+then
+
+  echo "ROM定制文件夹已经有 /system/xbin/busybox"
+
+  if [ "$1" == "show_help" ]
+  then
+    echo -n "替换 BusyBox $version (y/n)? (默认: y): "
+    read replace_bb
+    echo
+  else
+    replace_bb=n
+  fi
+
+  if [ "$replace_bb" == "n" ]
+  then
+    cd ..
+    exit 0
+  fi
+
+  echo "正在更换 /system/xbin/busybox"
+else
+  echo "正在添加 /system/xbin/busybox"
+fi
+
+cp -f ../tools/busybox_files/busybox system/xbin/
+cd ..
+
+scripts/add_busybox_to_update_script
+
+exit 0

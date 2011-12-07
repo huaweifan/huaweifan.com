@@ -1,0 +1,82 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+
+cd WORKING_*
+cd META-INF/com/google/android
+update_dir=`pwd`
+
+if [ -e update-binary.orig ]
+then
+  echo
+  echo "正在复制原始 update-binary 刷机脚本 ..."
+  cp -vf update-binary.orig update-binary
+
+elif [ -e update-binary ]
+then
+  echo
+  echo "正在使用现存的 update-binary 刷机脚本 ..."
+  echo
+
+else
+
+  cd ../../../../..
+  scripts/check_galaxy_s2
+  sgs2=$?
+  cd $update_dir
+
+  echo
+  echo "正在复制 update-binary 刷机脚本 ..."
+
+  if [ "$sgs2" == "1" ] 
+  then
+    
+    cp -vf ../../../../../tools/update_files/sgs2-update-binary update-binary
+
+  else
+
+    grep_emmc=`grep -c "mount(.*,.*,.*,.*)" updater-script`
+
+    if [ $grep_emmc -gt 0 ]
+    then
+
+      #
+      # Four args for mount
+      #
+      # e.g. mount("ext3", "EMMC", "/dev/block/mmcblk0p26", "/data");
+      # e.g. mount("yaffs2", "MTD", "userdata", "/data");
+      #
+
+      cp -vf ../../../../../tools/update_files/emmc-update-binary update-binary
+
+   else
+
+      #
+      # Three args for mount, but no MTD or assert
+      #
+      # mount("ext3", "/dev/block/mmcblk0p25", "/system");
+      #
+      # OR
+      #
+      # Three arguments, can use MTD and assert 
+      #
+      # e.g. mount("MTD", "userdata", "/data");
+      #
+
+      cp -vf ../../../../../tools/update_files/mtd-update-binary update-binary
+
+    fi
+  fi
+
+fi
+
+cd ../../../../..

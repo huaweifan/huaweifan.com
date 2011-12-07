@@ -1,0 +1,156 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+
+if [ "$1" == "" ]
+then
+  clear
+fi
+
+if [ ! -d WORKING_* ]
+then
+  echo "没有找到ROM定制文件夹！"
+  scripts/press_enter
+  exit 0
+fi
+
+scripts/check_galaxy_sx
+sgs=$?
+
+
+echo
+echo "获取 ROOT 权限"
+echo "--------------------------------------------"
+echo 
+echo "以下是为获取 Root 权限进行的操作:"
+echo
+echo "- 添加 Superuser.apk 和 su 文件"
+echo "- 添加 命令代码到 update-script 刷机脚本"
+
+if [ "$sgs" == "0" ]
+then
+  echo "- 在 ramdisk 中更新 default.prop"
+fi
+echo 
+echo "--------------------------------------------"
+echo
+
+cd WORKING_*
+
+if [ ! -d system ]
+then
+  echo "没有找到系统文件夹 System ！"
+  cd ..
+  scripts/press_enter
+  exit 0
+fi
+
+cd system
+
+if [ ! -e build.prop ]
+then
+  echo "错误: 没有找到 build.prop 设置文件！"
+  cd ../..
+  scripts/press_enter
+  exit 0
+fi
+
+su_path=`find . -name su`
+super_path=`find . -iname Superuser.apk`
+overwrite=0
+
+if [ "$su_path" != "" ] && [ "$super_path" != "" ] 
+then
+  echo "'su' 和 Superuser.apk 文件已经存在"
+  echo -n "是否要覆盖(y/n)? (默认: n): "
+  read do_su
+
+  if [ "$do_su" != "y" ]
+  then
+    cd ../..
+    exit 0
+  else
+    overwrite=1
+    echo
+    echo
+  fi
+
+fi
+
+
+echo "需要安装哪个版本的 Superuser 组件包？"
+echo
+
+if [ "`grep -c ro.build.version.release=1 build.prop`" != "0" ]
+then
+  echo " d - ChainsDD 的 Cupcake/Donut  (Android 1.x)" 
+else
+  echo " f - ChainsDD 的版本          (Android 2.x+)" 
+fi
+
+echo " s - 旧的简单版本      (All Android)"
+echo
+echo " x - 取消获取 Root 权限              (default)"
+echo
+
+echo -n "? "
+read enterVersion
+echo
+
+if [ "$enterVersion" == "d" ]
+then
+  folder=cupcake-donut
+elif [ "$enterVersion" == "f" ]
+then
+  folder=current
+elif [ "$enterVersion" == "s" ]
+then
+  folder=old
+else
+  echo "已经取消"
+  cd ../..
+  exit 1
+fi
+
+if [ "$overwrite" == "1" ]
+then
+  echo
+  echo "正在覆盖旧的 su 和 Superuser.apk ..."
+  rm -fv $su_path
+  rm -fv $super_path
+fi
+
+if [ "$enterVersion" == "s" ] 
+then
+  cp -fv ../../tools/su_files/$folder/app/Superuser.apk app
+  cp -fv ../../tools/su_files/$folder/bin/su bin
+else
+  cp -fv ../../tools/su_files/chainsdd/Superuser.apk app
+  cp -fv ../../tools/su_files/chainsdd/$folder/su bin
+fi
+
+cd ../..
+
+
+scripts/add_su_to_update_script
+
+if [ "$sgs" == "0" ]
+then
+  scripts/do_root_boot_img
+fi
+
+echo 
+echo "已经完成获取 Root 权限"
+echo
+
+scripts/press_enter
+

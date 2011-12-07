@@ -1,0 +1,180 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+#
+# This script has two optional arguments: 
+#
+# $1 = "no_info"      - specify this when porting or extracting kernel
+# $2 = "kernel_only"  - if this is specified, then $1 is mandatory
+#
+
+echo
+echo "为 ROM 创建ROM定制文件夹"
+echo "=============================="
+echo
+echo "请确保最少有一个 ROM 在 'original_update' 文件夹中！"
+echo
+echo "选择一个操作项:"
+echo
+echo " s - 显示支持的格式"
+echo " x - 关闭，不建立工作文件夹"
+echo ""
+echo "或按回车键继续"
+echo
+echo -n "? "
+read proceed
+  
+if [ "$proceed" == "x" ]
+then
+  echo
+  echo "已取消"
+  exit 1
+
+elif [ "$proceed" == "s" ]
+then
+  echo
+  echo "----------------------------------------------------------------------"
+  echo
+  echo "ROM 的格式必须是以下几种中任意一种:"
+  echo
+  echo " - system.img + optional boot.img/lib.img (例如官方 ROM or Nandroid)"
+  echo " - 作为定制 ROM 的 ZIP 文件               (例如 update.zip)"
+  echo " - 包含 *.img 的 ZIP 文件                 (例如官方 rom.zip)"
+  echo " - 包含官方 ROM 中 SYSTEM + BOOT 文件夹格式的 ZIP 文件"
+  echo " - 本ROM定制工具创建的文件夹                 (例如 WORKING_old_rom)"
+  echo
+  echo " 其它格式:"
+  echo
+  echo " 三星 Galaxy S:"
+  echo " - factoryfs.rfs + 可选的 cache.rfs/zImage"
+  echo " - PDA.tar.md5 + 可选的 CSC.tar.md5/PHONE.tar.md5"
+  echo " - PDA.tar + 可选的 CSC.tar/PHONE.tar"
+  echo " - 包含 factoryfs.rfs + 其它文件的 TAR/ZIP 文件" 
+  echo " - 包含 PDA.tar.md5/PDA.tar + 其它文件的 TAR/ZIP 文件"
+  echo
+  echo " 三星 Galaxy S II:"
+  echo " - factoryfs.img + 可选的 cache.img/zImage"  
+  echo " - 包含 factoryfs.img + 其它文件的 TAR/ZIP 文件" 
+  echo
+  echo " 华为 Huawei:"
+  echo " - 用来升级华为 Huawei 机器的官方升级文件 APP 格式(例如 UPDATE.APP)"
+  echo
+  echo "----------------------------------------------------------------------"
+  echo
+  echo -n "按回车键继续，或输入 x 退出："
+  read proceed
+  
+  if [ "$proceed" == "x" ]
+  then
+    exit 1
+  fi
+
+fi
+
+scripts/make_backup_working
+
+#
+# Check if the working folder was actually backed up
+#
+result=$?
+
+if [ "$result" == "1" ]
+then
+
+  echo
+  echo "错误: 旧的ROM定制文件夹正在使用中。请确认其中的文件或文件夹没有打开。"
+  scripts/press_enter
+  exit 1
+
+else
+
+  scripts/choose_rom $2
+  res=$?
+
+  if [ "$res" == "1" ] && [ "$2" == "kernel_only" ]
+  then
+    scripts/press_enter
+  fi
+
+  if [ `ls | grep -m 1 WORKING_` ] && [ "$res" != "1" ] && [ "$1" == "" ]
+  then
+
+    #
+    # Check for radio.img
+    #
+
+    echo
+    cd WORKING*
+    if [ -e radio.img ]
+    then
+      echo
+      echo "注意: ROM定制文件夹中发现 radio.img ，如果你想移除它，你可以"
+      echo "在建立 ROM 之前的任何时间移除。"
+    else
+
+      if [ -e META-INF/com/google/android/update-script ]
+      then
+
+        cd ..
+        scripts/update_script_should_convert_back ignore_msg
+        res=$?
+        cd WORKING_*
+
+        if [ "$res" != "1" ]
+        then
+          echo
+          echo "注意: 如果您希望添加 radio.img ，请把它放在工作文件夹的 root 下。"
+          echo "当你创建 ROM 时，update-script 刷机脚本将会自动修改以对 radio.img"
+          echo "的存在进行解释。"
+        fi          
+      fi
+    fi
+
+    if [ -e boot.img ] 
+    then
+      boot_found=yes
+    elif [ -e boot/zImage ] && [ -e boot/initrd.gz ]
+    then
+      boot_found=yes
+    else
+      boot_found=no
+    fi
+
+    if [ "$boot_found"=="yes" ]
+    then
+
+      #
+      # Prompt to show ROM info
+      # 
+
+      if [ "$1" == "" ]
+      then
+        cd ..
+        scripts/prompt_show_rom_info
+      else
+        cd ..
+      fi
+
+    else
+      echo
+      echo "没有找到 boot 镜像文件！"
+      cd ..
+    fi
+  fi
+fi
+
+if [ "$1" == "" ]
+then
+  scripts/press_enter
+fi
+
+exit $res

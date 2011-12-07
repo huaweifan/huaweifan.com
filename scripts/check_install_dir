@@ -1,0 +1,34 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+
+install_dir="`pwd`"
+grep_result=`echo "$install_dir" | grep ".* [ ]*"`
+
+if [ "$grep_result" != "" ]
+then
+  echo
+  echo "错误：文件夹 \"$install_dir\" 包含空格字符。"
+  echo "     这将导致ROM定制工具功能和操作系统的问题。"
+  echo "     请把ROM定制工具移动到一个文件夹不要隔离开。"
+
+  example_dir=`echo $install_dir | sed -e 's/\([^ ]*\) .*/\1\//g' -e 's/\(.*\)\/.*\//\/\1/g' -e 's/\/\//\//g'`
+  echo
+  echo "        例如：$example_dir/kitchen" 
+  echo
+
+  echo
+  exit 1
+else
+  exit 0
+fi
+

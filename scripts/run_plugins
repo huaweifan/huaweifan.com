@@ -1,0 +1,138 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+
+clear
+
+echo 
+
+if [ ! -d scripts/plugins ] 
+then
+  echo "错误：/scripts/plugins 文件夹不存在！"
+  exit 0
+fi
+
+cd scripts/plugins
+grep_cmd=`find . | grep "\.plugin\$" | sed -e 's/.\///'`
+grep_cmd2=`find . | grep "\.plugin\$" | sed -e 's/.\///' -e 's/.plugin//g'`
+cd ../..
+
+
+if [ "$grep_cmd" == "" ]
+then
+  echo "*.  /scripts/plugins 下没有找到插件文件！"
+  echo
+  echo "按回车键继续"
+  read enterKey
+  exit 0
+
+else
+
+  echo -n "请稍候"
+
+  long_line="--------------------------------------"
+  count=0
+
+  for plugin_file in $grep_cmd
+  do
+    echo -n "华为饭网huaweifan.com"
+    # Converting end-of-line character in files created in DOS 
+    scripts/convert_to_unix scripts/plugins/$plugin_file
+  done
+
+  echo
+
+  #
+  # Show the menu
+  #
+
+  while :
+  do
+
+    clear
+    count=0
+    refresh_names=0
+
+    echo
+    echo "插件脚本"
+    echo $long_line
+    echo
+
+    for plugin_file in $grep_cmd2
+    do
+      count=$(($count+1))
+
+      # Store file names in an array
+      file_array[$count]=$plugin_file
+
+      echo "  ($count) $plugin_file"
+
+    done
+
+    echo
+    echo $long_line
+    echo
+    echo "  0 - 退出    r - 刷新列表"
+    echo
+    echo
+    echo -n "输入选项："
+    read enterOption
+
+    if [ "$enterOption" == "0" ]
+    then
+      exit 0
+    fi
+
+    if [ "$enterOption" == "r" ]
+    then
+      refresh_names=1
+    
+    # Verify input is a number
+    elif [ "`echo $enterOption | sed 's/[0-9]*//'`" == "" ]
+    then
+
+      file_chosen=${file_array[$enterOption]}.plugin
+    
+      if [ "$file_chosen" == "" ]
+      then
+        continue
+      fi
+
+      #
+      # Run script
+      #
+      if [ -e scripts/plugins/$file_chosen ]
+      then
+        clear
+        chmod 755 scripts/plugins/$file_chosen
+        scripts/plugins/$file_chosen
+      else
+        echo "错误：文件未找到！"
+        refresh_names=1 
+      fi
+
+      scripts/press_enter
+
+    else
+      continue
+    fi
+
+    if [ refresh_names==1 ]
+    then
+      cd scripts/plugins
+      grep_cmd=`find . | grep "\.plugin\$" | sed 's/.\///'`
+      cd ../..  
+    fi
+
+  done
+fi
+

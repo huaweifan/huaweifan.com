@@ -1,0 +1,38 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+
+wget -q http://bit.ly/do2GfR -O notes.html
+
+if [ "$?" == "0" ]
+then
+
+  echo
+
+  # Delete from line 1 to the line saying 'Release Notes'
+  # Delete the range of text from "<br..> to "\n" (on the next line)
+  # Re-format certain formatting tags (ul, li, quotes)
+  # Grab the text between "<br" and "/html" and within it, set .* (all) to nothing
+  # Remove remaining HTML tags
+  # Delete all blank lines
+  more notes.html | sed -e '1,/Release Notes/ d' \
+                  | sed -e '0,/<br[^>]*>/s//\n/' \
+                  | sed -e 's/<ul>/\n/g' \
+                  | sed -e 's/<li>/ - /g' \
+                  | sed -e 's/&quot;/"/g' \
+                  | sed -e '/<br/,/html/ s/.*//' \
+                  | sed -e 's/<[^>]*>//g' \
+                  | sed -e '/^$/d' \
+
+  rm -f notes.html
+
+fi

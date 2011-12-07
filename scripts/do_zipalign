@@ -1,0 +1,169 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+#
+# This script has two optional arguments:
+# $1 = "for_build"
+# $2 = yes/no (ignore prompt) - relies on $1 being present, default=yes
+#
+
+
+if [ "$1" != "for_build" ]
+then
+  clear
+  echo
+
+  if [ -d WORKING_* ]
+  then
+    echo 已经找到ROM定制文件夹
+  else
+    echo 没有找到ROM定制文件夹！
+    exit 1
+  fi
+fi
+
+if [ `uname | grep CYGWIN` ]
+then
+  zipalign_file=zipalign.exe
+
+elif [ `uname | grep Linux` ]
+then
+  zipalign_file=zipalign
+
+elif [ `sw_vers | grep -o Mac` ]
+then
+  zipalign_file=zipalign.mac
+
+else
+  echo 错误：未检测到操作系统，无法使用 zipalign
+  exit 1
+fi
+
+
+return_val=0
+
+if [ "$1" == "for_build" ]
+then
+
+  if [ "$2" == "no" ]
+  then
+    echo
+    echo -n "是否对 APK 文件进行 Zipalign 优化(y/n)? (默认: y): "
+    read do_zipalign
+  fi    
+
+else
+  clear
+
+  echo
+  echo "---------------------------------------------------------------"
+  echo  
+  echo "Zipalign 是一个将会优化ROM定制文件夹下 *.apk 文件以优化内存占用的过程。"
+  echo
+  echo "注意: 此操作将会对所有 *.apk 文件进行 Zipalign 操作，创建 ROM 时同样"
+  echo "会提供此操作选项，现在并不是必须进行。"
+  echo 
+  echo "---------------------------------------------------------------"
+  echo
+
+  echo -n "是否继续进行 Zipalign 操作 (y/n)? (默认: y): "
+  read do_zipalign
+fi
+
+
+if [ "$do_zipalign" == "n" ]
+then
+  exit 0
+fi
+
+
+echo
+cd WORKING_*
+
+grep_cmd=`find . | grep .apk$ | sort -f`
+
+name1=
+
+for filename in $grep_cmd
+do
+
+  #
+  # Handle spaces in file names
+  #
+  if [ "`echo $filename | grep .apk$`" == "" ]
+  then
+
+    if [ "$name1" == "" ]
+    then
+      name1=$filename
+    else
+      name1="$name1 $filename"
+    fi
+
+    continue
+
+  elif [ "$name1" != "" ]
+  then
+
+    # Replace space with underscore temporarily
+    name2=$filename
+    original_name="$name1 $name2"
+    filename=`echo $original_name | tr ' ' '_'`
+    mv "$name1 $name2" $filename
+    found_space=yes
+    echo "正在 Zipalign $original_name ..."
+
+  else
+    found_space=no
+    echo "正在 Zipalign $filename ..."
+  fi
+
+  new_file=$filename\_new
+  ../tools/zipalign_files/$zipalign_file 4 $filename $new_file
+
+  if [ -e $new_file ]
+  then
+
+    if [ "$found_space" == "yes" ]
+    then
+      mv -f $new_file "$name1 $name2"
+      rm -f $filename
+
+    else
+      mv -f $new_file $filename 
+    fi
+
+  else
+
+    return_val=1
+    echo "错误：无法进行 Zipalign 操作，正在终止 ..."
+    if [ `uname | grep Linux` ]
+    then
+      echo "如果您使用64位 Linux 系统，请确认您已经安装 ia32-libs 组件"
+    fi
+    break
+  fi
+
+  name1=
+
+done
+
+cd ..
+echo
+
+if [ "$return_val" == "0" ]
+then
+  echo "已经完成 Zipalign 操作"
+fi
+
+exit $return_val
+

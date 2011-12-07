@@ -1,0 +1,106 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+
+clear
+echo
+echo "-----------------------------------------------------------------"
+echo 
+echo "此操作项将会禁用 Android 设备的开机音乐，其并不一定支持所有 ROM 文件。"
+echo
+echo "-----------------------------------------------------------------"
+echo
+
+echo -n "是否要继续并禁用开机音乐(y/n)? (默认为: y): "
+read do_disable
+
+if [ "$do_disable" == "n" ]
+then
+  exit 0
+fi
+
+echo
+
+if [ -d WORKING_* ]
+then
+  echo 已经找到ROM定制文件夹！
+else
+  echo 没有找到ROM定制文件夹，你需要创建一个！
+  exit 0
+fi
+
+if [ -d WORKING_* ]
+then
+  cd WORKING_*
+else
+  exit 0
+fi
+
+if [ -e system/media/bootscreen/boot_animation.xml ]
+then
+  cd system/media/bootscreen/
+
+  echo
+  echo "当前在 boot_animation.xml 中: "
+  grep useAudio boot_animation.xml
+  echo
+
+  if [ "`grep useAudio='"1"' boot_animation.xml`" == "" ]
+  then
+    echo 开机音乐已经禁用，不需要修改
+  else
+    echo 正在修改 boot_animation.xml ...
+    perl -pi -e 's/useAudio="1"/useAudio="0"/g' boot_animation.xml
+
+    echo
+    echo "现在:"
+    grep useAudio boot_animation.xml
+  fi
+
+  if [ -e boot_animation.xml.bak ]
+  then
+    echo
+    echo "正在删除 boot_animation.xml.bak ..."  
+    rm boot_animation.xml.bak
+  fi
+
+
+  cd ../../../..
+
+
+else
+
+  echo
+  echo "/system/media/bootscreen/boot_animation.xml 在 ROM 中没有找到！"
+
+  file_list="system/customize/resource/android_audio.mp3 system/media/android_audio.mp3 system/sounds/lgeSounds/PowerOn.mp3 system/etc/PowerOn.wav"
+
+  for snd in $file_list 
+  do
+
+    echo
+
+    if [ -e $snd ]
+    then
+      echo "--> 重命名 /$snd"
+      mv $snd $snd.bak
+    else
+      echo "/$snd 在 ROM 中没有找到"
+    fi
+  
+  done
+
+  cd ..
+fi
+
+echo
+

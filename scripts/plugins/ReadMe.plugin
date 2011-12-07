@@ -1,0 +1,12 @@
+
+echo
+echo "创建自己制作的插件："
+echo ""
+echo "  - 他们需要的是shell脚本。shell脚本的例子，请参阅“scripts”文件夹下的文件。"
+echo
+echo "  - 您的shell脚本必须有一个文件名，以“.plugin”结束。确保该名称没有任何空格。"
+echo
+echo "    例如： HelloWorld.plugin"
+echo
+echo "  - 复制你的插件脚本到该文件夹​​：/scripts/plugins 下。"
+echo 

@@ -1,0 +1,88 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+
+cd WORKING_*
+cd META-INF/com/google/android
+
+if [ -e update-script ]
+then
+
+  if [ "`grep -om 1 a2sd update-script`" == "a2sd" ]
+  then
+    echo "update-script 刷机脚本已有 A2SD 内容"
+    cd ../../../../..
+    exit 0
+
+  else
+
+    echo
+    echo "正在为 update-script 脚本添加 apps2sd 的相关内容 ..."
+
+    if [ `grep -c "copy_dir PACKAGE:data DATA:" update-script` == 0 ]
+    then
+
+      if [ `grep -c "format .*DATA:" update-script` == 0 ] 
+      then
+        sed -i -e 's/format\(.*\)SYSTEM:[ ]*[\n]*/format\1SYSTEM:\n\ncopy_dir PACKAGE:data DATA:\n/' update-script
+      else
+        sed -i -e 's/format\(.*\)DATA:[ ]*[\n]*/format\1DATA:\n\ncopy_dir PACKAGE:data DATA:\n/' update-script
+      fi
+
+    fi
+
+    #
+    # Remove symlink to /data/app from previous install of apps2sd
+    #
+    if [ `grep -c "delete DATA:app" update-script` == 0 ]
+    then
+      sed -i -e 's/copy_dir PACKAGE:data DATA:/delete DATA:app\ncopy_dir PACKAGE:data DATA:/' update-script
+    fi
+
+    # Insert file after a certain pattern
+    cp ../../../../../tools/apps2sd_files/apps2sd_system .
+    sed -i -e '/etc\/init.goldfish.sh/r apps2sd_system' update-script
+    rm apps2sd_system
+
+    # Insert file before a certain line
+    cp ../../../../../tools/apps2sd_files/apps2sd_run_program .
+    line_num=`sed -n -e '/write_raw_image .*:boot.img BOOT:/{=;q}' update-script`    
+
+    if [ "$line_num" != "" ]
+    then
+      line_num=$(($line_num-1))
+      sed -i -e ''$line_num' r apps2sd_run_program' update-script
+    else
+      echo "错误：无法在 boot 分区中找到 write_raw_image ！"
+    fi
+
+    rm apps2sd_run_program
+
+    if [ "`grep -om 1 a2sd update-script`" != "a2sd" ]
+    then
+      echo "错误: 无法在 update-script 脚本中添加相关 a2sd 的相关内容！"
+      cd ../../../../..
+      exit 1
+    fi
+
+    cd ../../../../..
+    exit 0
+
+  fi
+
+else
+  echo "错误：没有找到 update-script 刷机脚本！"
+  cd ../../../../..
+  exit 1
+fi
+
+

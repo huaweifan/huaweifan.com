@@ -1,0 +1,31 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+cd original_update
+
+grep_cmd1=`find . -maxdepth 1 -type f | grep -i \\.zip$ | sed 's/ /temp_space/g' 2>/dev/null`
+grep_cmd2=`find . -maxdepth 1 -type f | grep -i \\.tar$ | sed 's/ /temp_space/g' 2>/dev/null`  
+grep_cmd3=`find . -maxdepth 1 -type f -name system.img 2>/dev/null`
+grep_cmd4=`find . -maxdepth 1 -type f | grep -i \\.app$ | sed 's/ /temp_space/g' 2>/dev/null`
+
+grep_cmd5=`find . -maxdepth 1 -type f -name factoryfs.img 2>/dev/null`
+grep_cmd6=`find . -maxdepth 1 -type f -name factoryfs.rfs 2>/dev/null`
+
+grep_cmd7=`find . -maxdepth 1 -type f -name PDA.tar.md5 2>/dev/null`
+grep_cmd8=`find . -maxdepth 1 -type f -name PDA.tar 2>/dev/null`
+
+grep_cmd9=`find . -maxdepth 1 -type d | grep "\./WORKING_" | sed 's/ /temp_space/g' 2>/dev/null`
+
+grep_cmd=`echo $grep_cmd1 $grep_cmd2 $grep_cmd3 $grep_cmd4 $grep_cmd5 $grep_cmd6 $grep_cmd7 $grep_cmd8 $grep_cmd9 | sed -e 's/\.\///g' | sort -f`
+
+cd ..
+echo $grep_cmd

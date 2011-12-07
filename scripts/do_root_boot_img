@@ -1,0 +1,81 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+scripts/ensure_boot_extracted no_clear
+
+if [ -d BOOT-EXTRACTED ]
+then
+  if [ -d WORKING_* ]
+  then
+    echo -n 
+  else
+    exit 0
+  fi
+else
+  exit 0
+fi
+
+echo
+
+if [ -d BOOT-EXTRACTED/boot.img-ramdisk ]
+then
+  cd BOOT-EXTRACTED/boot.img-ramdisk
+else
+  echo "错误：没有找到 BOOT-EXTRACTED/boot.img-ramdisk 文件夹！"
+  exit 0
+fi
+
+changed=0
+echo "正在更新 default.prop ..."
+
+if [ "`grep -om 1 ro.secure=1 default.prop`" == "ro.secure=1" ]
+then
+  echo "设置：ro.secure=0"
+  perl -pi -e 's/ro.secure=1/ro.secure=0/g' default.prop
+  changed=1
+fi
+
+if [ "`grep -om 1 ro.debuggable=0 default.prop`" == "ro.debuggable=0" ]
+then
+  echo "设置：ro.debuggable=1"
+  perl -pi -e 's/ro.debuggable=0/ro.debuggable=1/g' default.prop
+  changed=1
+fi
+
+if [ "`grep -om 1 persist.service.adb.enable=0 default.prop`" == "persist.service.adb.enable=0" ]
+then
+  echo "设置：persist.service.adb.enable=1"
+  perl -pi -e 's/persist.service.adb.enable=0/persist.service.adb.enable=1/g' default.prop
+  changed=1
+fi
+
+if [ $changed == 1 ]
+then
+  echo
+  echo 新的 default.prop:
+  more default.prop
+  echo
+
+  if [ -e default.prop.bak ]
+  then
+    rm default.prop.bak
+  fi
+
+  cd ../..
+  scripts/build_boot_img
+
+else
+  echo "不对 default.prop 进行更改"
+  cd ../..
+  rm -rf BOOT-EXTRACTED
+fi
+

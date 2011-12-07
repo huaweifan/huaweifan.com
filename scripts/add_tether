@@ -1,0 +1,155 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+
+clear
+echo
+echo "-----------------------------------------------------------------"
+echo 
+echo "无线共享“选项增加了一个应用程序，允许您的设备可以充当一个无线路由器。"
+echo "设备的Android 2.2（升级Froyo）或以后通常有此功能内置到操作系统。"
+echo ""
+echo "该应用程序将被添加在 /data/app 文件夹下。"
+echo "如果 /data/app 功能尚未启用，则脚本会自动执行。"
+echo
+echo "-----------------------------------------------------------------"
+echo
+
+scripts/pre_froyo_check
+is_old=$?
+
+if [ "$is_old" == "1" ] 
+then
+  echo -n "是否要继续添加无线共享 (y/n)? (默认: y): "
+  read do_tether
+
+  if [ "$do_tether" == "n" ]
+  then
+    exit 0
+  fi
+elif [ "$is_old" == "2" ]
+then
+  echo "错误：找不到 system 文件夹！"
+  exit 0
+
+else
+  echo -n "ROM版本比Android2.1更高，仍然继续添加 (y/n)? (默认: n): "
+  read do_tether
+
+  if [ "$do_tether" != "y" ]
+  then
+    exit 0
+  fi
+fi
+
+
+scripts/ensure_boot_extracted
+
+if [ ! -d WORKING_* ]
+then
+  exit 0
+fi
+
+
+
+if [ -d BOOT-EXTRACTED ] 
+then
+  echo
+else
+  echo "BOOT-EXTRACTED 文件夹没有找到"
+  exit 0
+fi
+
+
+#
+# Check for root (just look at default.prop in boot.img)
+#
+
+echo "无线共享功能需要已经获得 Root 权限的ROM"
+
+if [ -d BOOT-EXTRACTED/boot.img-ramdisk ]
+then
+  cd BOOT-EXTRACTED/boot.img-ramdisk
+else
+  echo "错误：BOOT-EXTRACTED/boot.img-ramdisk 文件夹没有找到！"
+  exit 0
+fi
+
+if [ "`grep -m 1 ro.secure default.prop`" == "ro.secure=1" ] 
+then
+  echo "ROM 没有完全获取 Root 权限，因为 ro.secure=1 在 default.prop. 中"
+  echo "现在我们将要获取 Root 权限 ..."
+  echo
+  echo "当您准备好了，请按Enter键。"
+  read enterKey
+  cd ../..
+  rm -rf BOOT-EXTRACTED
+  scripts/do_root
+
+else
+  echo "Boot.img 已经破解了安全权限"
+  cd ../..
+  rm -rf BOOT-EXTRACTED
+fi
+
+
+if [ -d WORKING_* ]
+then
+  echo
+else
+  exit 0
+fi
+
+
+#
+# Copy APK
+#
+
+tether_file=wireless_tether*
+
+cd WORKING_*
+
+tether_list=( wireless_tether* android.tether* )
+tether_found=0
+
+for find_tether in ${tether_list[@]}
+do
+  
+  res=`find . -name $find_tether`
+  if [ "$res" != "" ]
+  then
+    echo "$res 已经找到"
+    tether_found=1
+  fi
+
+done
+
+
+if [ $tether_found == 1 ]
+then
+  cd ..
+  exit 0
+
+else
+  cd ..
+  scripts/add_data_app dont_ask
+  cd WORKING_*
+
+  echo
+  echo "正在复制应用程序 ..."
+  cp -v ../tools/apps/$tether_file data/app/
+  cd ..
+fi
+
+echo
+echo "完成"
+

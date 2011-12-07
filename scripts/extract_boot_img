@@ -1,0 +1,85 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+clear
+
+date_str=`date '+%m%d%y_%H%M%S'`
+boot_dir=bootimg_$date_str
+
+echo
+echo "正在创建文件夹  `pwd`/$boot_dir ..."
+mkdir $boot_dir
+
+echo
+echo "---> 请把 boot.img 放到上述文件夹中 <--"
+
+scripts/press_enter
+
+cd $boot_dir
+
+if [ -e boot.img ]
+then
+
+  cd ..
+  scripts/check_bootimg_header $boot_dir
+  scripts/check_kernel_offset $boot_dir
+  res=$?
+
+  if [ "$res" == "0" ]
+  then
+    kernel_file=extract-kernel.pl
+    ramdisk_file=extract-ramdisk.pl
+  else
+    rm -rf $boot_dir
+    exit 0
+  fi
+
+  cd $boot_dir
+  cp ../tools/extract_boot_files/$kernel_file extract-kernel.pl
+  cp ../tools/extract_boot_files/$ramdisk_file extract-ramdisk.pl
+
+  echo
+  echo Extracting kernel ...
+  ./extract-kernel.pl boot.img 2>/dev/null
+      
+  if [ ! -e zImage ]
+  then
+    echo "错误：没有找到 zImage ！"
+  fi
+
+  echo Extracting ramdisk ... 
+  ./extract-ramdisk.pl boot.img 2>/dev/null
+      
+  if [ ! -d boot.img-ramdisk ]
+  then
+    echo "错误：没有找到 ramdisk 文件夹！"
+  fi
+
+  rm boot.img
+  rm extract-*.pl
+  cd ..
+  echo
+  echo "$boot_dir 的内容："
+  echo
+  echo "`ls -l $boot_dir`"
+
+
+else
+  echo "错误：没有找到 boot.img ！"
+  echo
+  cd ..
+  echo "正在移除 $boot_dir 文件夹 ..."
+  rm -rf $boot_dir
+  exit 0
+fi      
+  
+

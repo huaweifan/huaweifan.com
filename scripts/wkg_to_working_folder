@@ -1,0 +1,94 @@
+############################################################################
+#
+# 版权所有 (c) 2010-2011 dsixda - 由华为饭网的饭吗汉化 bbs.huaweifan.com
+#
+# Android 厨房是一款ROM定制工具，它完全是免费的。 
+# 理论上支持所有民间刷机包的定制，完美支持华为和HTC的所有民间和官方刷机包！ 
+# 该脚本文件的目的是为个人和/或教育使用，不得将它用于任务商业用途。
+# 
+# 技术支持来自XDA和华为手机论坛，华为手机论坛网址是：bbs.huaweifan.com
+#
+############################################################################
+
+#
+# This script has two arguments:
+#
+# $1 = folder name (mandatory)
+# $2 = "kernel_only" or "name_given" (optional)
+#
+
+
+update_folder=$1
+ 
+echo "已选择 $update_folder"
+
+# Trim spaces in folder name
+update_folder2=`echo $update_folder | tr ' ' '_'`
+
+if [ "$update_folder" != "$update_folder2" ]
+then
+  echo "正在重命名为 $update_folder2"
+  mv "original_update/$update_folder" original_update/$update_folder2
+  update_folder=$update_folder2
+fi
+
+#
+# Working folder name
+#
+build_dir=`scripts/set_working_folder_name $2` 
+
+
+#
+# Creating folder structure
+#
+
+echo
+echo "正在创建ROM定制文件夹 $build_dir ..."
+mkdir $build_dir
+
+echo
+echo "正在复制 $update_folder 相关内容 ..."
+cp -fr original_update/$update_folder/* $build_dir 2>/dev/null
+
+if [ "$?" != "0" ]
+then
+  echo
+  echo "错误：无法复制文件夹的内容！"
+  cd ..
+  exit 1
+fi
+
+
+if [ "$2" != "kernel_only" ] && [ "$2" != "name_given" ]
+then
+  scripts/check_no_update_script
+  error_code=$?
+fi
+
+echo
+echo "META-INF/com/google/android 列表："
+
+cd $build_dir
+cd META-INF/com/google/android
+ls -l 
+cd ../../../../..
+
+
+#
+# Completion
+#
+
+echo
+echo $build_dir 列表
+
+cd $build_dir
+ls -l 
+
+cd ..
+
+if [ "$error_code" == "1" ]
+then
+  exit 1
+else
+  exit 0
+fi
